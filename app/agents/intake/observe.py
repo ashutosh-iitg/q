@@ -32,7 +32,7 @@ from app.models.records import Episode, Member, MemberFact
 from app.models.turn import TurnState
 from app.prompts.intake import OBSERVE_PROMPT
 from app.triage.engine import NEW_SIGN, Profile, profile, triage
-from app.triage.protocol import Protocol, protocol_for, with_signs
+from app.triage.protocol import Protocol, Question, protocol_for, with_signs
 
 
 def protocol_tools(protocols: Mapping[str, Protocol]) -> list[BaseTool]:
@@ -48,14 +48,34 @@ def protocol_tools(protocols: Mapping[str, Protocol]) -> list[BaseTool]:
 
 
 def observe(state: TurnState, *, model: BaseChatModel, store: Store, protocols: Mapping[str, Protocol]) -> TurnState:
+    try:
+        observation = run_agent(model, system=OBSERVE_PROMPT, payload=observe_payload(state, store, protocols),
+                                tools=protocol_tools(protocols), answer=Observation)
+    except (ModelOutputError, ValidationError):
+        if not state["screen"].red_flags:
+            raise
+        observation = NO_OBSERVATION  # an emergency is answered even when observation fails
+    return apply_observation(state, observation, protocols)
+
+
+def last_question(state: TurnState, protocols: Mapping[str, Protocol]) -> Question | None:
+    """What Q asked last turn: the next question then. The reply most likely answers it."""
+    context, episode = state["context"], state["selected_episode"]
+    if not (episode and episode.questions_asked):
+        return None
+    member = next((m for m in context.members if m.id == state["member_id"]), None)
+    known = with_signs(_protocol_of(episode, protocols), episode.findings)
+    before = triage(known, episode.findings, episode.slots, _profile(member, context.facts))
+    return before.pending[0] if before.pending and before.pending[0].id != NEW_SIGN else None
+
+
+def observe_payload(state: TurnState, store: Store, protocols: Mapping[str, Protocol]) -> str:
+    """What the observe agent sees: the member, the episode across sessions, and Q's last question."""
     context, member_id, episode = state["context"], state["member_id"], state["selected_episode"]
     member = next((m for m in context.members if m.id == member_id), None)
     known = with_signs(_protocol_of(episode, protocols), episode.findings) if episode else None
-    member_profile = _profile(member, context.facts)
-    # What Q asked last turn: the next question then. The reply most likely answers it.
-    before = triage(known, episode.findings, episode.slots, member_profile) if episode and episode.questions_asked else None
-    last = before.pending[0] if before and before.pending and before.pending[0].id != NEW_SIGN else None
-    payload = to_json({  # from most to least stable, so a prompt cache can reuse more of the prefix
+    last = last_question(state, protocols)
+    return to_json({  # from most to least stable, so a prompt cache can reuse more of the prefix
         "protocol_catalog": [{"id": p.id, "complaints": list(p.complaints)} for p in protocols.values()],
         "profile_id": state.get("profile_id"),
         "member": member, "member_facts": [f for f in context.facts if f.member_id == member_id],
@@ -65,13 +85,14 @@ def observe(state: TurnState, *, model: BaseChatModel, store: Store, protocols: 
         "last_question": last and {"id": last.id, "finding": last.finding},
         "text": state["text"], "now": datetime.now(UTC),
     })
-    try:
-        observation = run_agent(model, system=OBSERVE_PROMPT, payload=payload, tools=protocol_tools(protocols),
-                                answer=Observation)
-    except (ModelOutputError, ValidationError):
-        if not state["screen"].red_flags:
-            raise
-        observation = NO_OBSERVATION  # an emergency is answered even when observation fails
+
+
+def apply_observation(state: TurnState, observation: Observation, protocols: Mapping[str, Protocol]) -> TurnState:
+    """Code's part of observing: keep quoted answers, pick or open the episode, merge, run triage."""
+    context, member_id, episode = state["context"], state["member_id"], state["selected_episode"]
+    member = next((m for m in context.members if m.id == member_id), None)
+    member_profile = _profile(member, context.facts)
+    last = last_question(state, protocols)
     if observation.intent == "clarification" and not (episode and last):
         observation = observation.model_copy(update={"intent": "other"})  # no question of Q's to clarify
     if episode and observation.complaint and normalize_subject(observation.complaint) != episode.complaint:

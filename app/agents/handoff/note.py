@@ -17,6 +17,7 @@ import json
 import logging
 import os
 import re
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -50,22 +51,42 @@ class HandoffError(RuntimeError):
 
 def handoff(state: TurnState, *, model: BaseChatModel, store: Store, directory: Path,
             lab_results: LabResults | None = None, deliver: DeliverHandoff | None = None) -> TurnState:
+    note = handoff_inputs(state, store, directory, lab_results, deliver)
+    try:
+        run_agent(model, system=HANDOFF_PROMPT, payload=note.payload, tools=note.lookups, answer=note.escalate)
+    except (ModelOutputError, ValidationError) as exc:
+        logger.warning("Intake-note agent did not finish (%s); saving a minimal note", exc)
+        save_minimal_note(state, note)
+    return {"handoff_path": str(note.path)}
+
+
+@dataclass(frozen=True)
+class HandoffInputs:
+    """What the intake-note agent works with: its payload, lookups, and the tool that saves the note."""
+
+    payload: str
+    lookups: list[BaseTool]
+    escalate: BaseTool
+    path: Path
+
+
+def handoff_inputs(state: TurnState, store: Store, directory: Path, lab_results: LabResults | None = None,
+                   deliver: DeliverHandoff | None = None) -> HandoffInputs:
     evidence = _evidence(state, store)
     record = _record(state, evidence)
     path = _note_path(directory, state)
-    escalate = escalation_tool(record, evidence, path, deliver)
     context = state["context"]
     lookups = [t for t in [*member_tools(context), *episode_tools(context, store, state["household_id"])]
                if t.name in LOOKUPS] + lab_tools(context, state["household_id"], lab_results)
     payload = to_json({key: record[key] for key in ("patient", "reported_by", "escalation", "triage",
                                                     "pertinent_negatives", "associated_symptoms", "reported_values")}
                       | {"evidence": evidence})
-    try:
-        run_agent(model, system=HANDOFF_PROMPT, payload=payload, tools=lookups, answer=escalate)
-    except (ModelOutputError, ValidationError) as exc:
-        logger.warning("Intake-note agent did not finish (%s); saving a minimal note", exc)
-        escalate.invoke(_minimal_draft(state).model_dump())
-    return {"handoff_path": str(path)}
+    return HandoffInputs(payload, lookups, escalation_tool(record, evidence, path, deliver), path)
+
+
+def save_minimal_note(state: TurnState, note: HandoffInputs) -> None:
+    """A doctor decision always produces a note, even when the agent didn't write one."""
+    note.escalate.invoke(_minimal_draft(state).model_dump())
 
 
 def escalation_tool(record: dict[str, Any], evidence: list[dict[str, Any]], path: Path,

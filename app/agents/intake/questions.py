@@ -55,17 +55,28 @@ IntakeQuestions.model_rebuild()
 def intake_agent(
     state: TurnState, *, model: BaseChatModel, store: Store, lab_results: LabResults | None = None,
 ) -> TurnState:
-    triage, context = state["triage"], state["context"]
+    context = state["context"]
     lookups = [t for t in [*member_tools(context), *episode_tools(context, store, state["household_id"])]
                if t.name in LOOKUPS] + lab_tools(context, state["household_id"], lab_results)
-    findings = dict(state.get("findings") or {})
     try:
-        result = run_agent(model, system=INTAKE_AGENT_PROMPT, payload=_payload(state), tools=lookups,
+        result = run_agent(model, system=INTAKE_AGENT_PROMPT, payload=question_payload(state), tools=lookups,
                            answer=IntakeQuestions)
-        return {"reply": _with_context(checked_reply(result, triage), state),
-                "findings": with_new_sign(result, triage, findings)}
+        return apply_questions(state, result)
     except (ModelOutputError, ValidationError) as exc:
         logger.warning("Intake agent did not finish (%s); asking from the protocol text", exc)
+    return fallback_question(state)
+
+
+def apply_questions(state: TurnState, result: IntakeQuestions) -> TurnState:
+    """The checked question as the reply, and any sign the agent added to the findings."""
+    triage = state["triage"]
+    return {"reply": _with_context(checked_reply(result, triage), state),
+            "findings": with_new_sign(result, triage, dict(state.get("findings") or {}))}
+
+
+def fallback_question(state: TurnState) -> TurnState:
+    """The protocol's own wording, when the agent couldn't write the question."""
+    triage, findings = state["triage"], dict(state.get("findings") or {})
     question = triage.pending[0]
     if question.id != NEW_SIGN:
         fallback = IntakeQuestions(message="", new_sign=None)
@@ -130,7 +141,7 @@ def with_new_sign(result: IntakeQuestions, triage: Triage, findings: dict) -> di
                                                "ask": sign_question(result.new_sign.sign)}}
 
 
-def _payload(state: TurnState) -> str:
+def question_payload(state: TurnState) -> str:
     triage, context, extraction = state["triage"], state["context"], state["extraction"]
     member = next((m for m in context.members if m.id == state["member_id"]), None)
     writer = next((m for m in context.members if m.id == state.get("profile_id")), None)
