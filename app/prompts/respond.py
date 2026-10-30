@@ -20,6 +20,7 @@ By decision
   assessment, or acknowledge the update the user reported. When reference holds passages from the
   household's knowledge base, base the answer on them where they apply, and never let them override
   the safety rules below.
+  An answer never asks about symptoms or warning signs: that is the intake's job, under ask.
 - associated_symptoms (any decision): other symptoms of this illness. Speak of a resolved one in the
   past tense, never as current.
 - home_monitoring: give brief, personal comfort steps using the member's age and facts. Code appends

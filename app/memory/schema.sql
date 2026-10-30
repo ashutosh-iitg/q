@@ -59,6 +59,9 @@ ALTER TABLE episodes ADD COLUMN IF NOT EXISTS findings JSONB NOT NULL DEFAULT '{
 -- Other symptoms of the same illness and whether each is still there (2026-10-29), e.g. a fever
 -- that came with a cough and has gone: {symptom: {status: active|resolved, quote, at}}.
 ALTER TABLE episodes ADD COLUMN IF NOT EXISTS associated JSONB NOT NULL DEFAULT '{}';
+-- How soon a doctor was asked to see it, and the turn whose intake note handed it over.
+ALTER TABLE episodes ADD COLUMN IF NOT EXISTS urgency TEXT;
+ALTER TABLE episodes ADD COLUMN IF NOT EXISTS handoff_id TEXT;
 
 CREATE TABLE IF NOT EXISTS member_facts (
   id                 BIGSERIAL PRIMARY KEY,

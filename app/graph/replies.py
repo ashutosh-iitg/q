@@ -7,11 +7,12 @@ from app.agents.loop import ModelOutputError
 from app.extensions import Knowledge
 from app.models.turn import TurnState
 from app.prompts.respond import RESPOND_PROMPT
-from app.triage.policy import FIXED_REPLIES, GENERAL_WATCH_FOR, URGENCY_ADVICE, Decision
+from app.triage.policy import ALREADY_WITH_DOCTOR, FIXED_REPLIES, GENERAL_WATCH_FOR, URGENCY_ADVICE, Decision
 
 
 def fixed_reply(state: TurnState) -> TurnState:
-    reply = FIXED_REPLIES[state["decision"]]
+    already = state["decision"] == Decision.DOCTOR and state.get("note_on_file")
+    reply = ALREADY_WITH_DOCTOR if already else FIXED_REPLIES[state["decision"]]
     if state.get("urgency"):
         reply += " " + URGENCY_ADVICE[state["urgency"]]
     return {"reply": reply}
