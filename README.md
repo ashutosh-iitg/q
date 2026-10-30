@@ -69,11 +69,35 @@ persisted response without model calls. Reusing that key with different text ret
 409; another session may use the same key. Omitting the key generates one, returned
 in the response. A model failure returns 502; retry with the same key.
 
+## Code layout
+
+```text
+app/
+  graph/        the turn graph: build.py (wiring), nodes.py, replies.py, routing.py
+  agents/       the model-driven steps and what they share
+    loop.py       bounded lookup-then-answer loop every agent runs
+    tools.py      read-only, household-scoped lookups
+    resolvers.py  member and episode resolution
+    intake/       observe.py (map the message to the protocol), merge.py (findings), questions.py (next question)
+    handoff/      note.py (doctor intake note), draft.py (its schema), faithfulness.py (evidence checks)
+    context.py, extraction.py, evidence.py
+  prompts/      one system prompt module per role, plus shared rules and tone
+  models/       outputs.py (model output schemas), records.py (stored records), turn.py (graph state)
+  memory/       store.py (Postgres), sql.py, rows.py, writes.py, schema.sql, consolidation.py
+  triage/       engine.py (sufficiency), protocol.py, policy.py (disposition rules), protocols/*.yaml
+  config.py, extensions.py, demo.py
+api/            FastAPI app and request/response schemas
+ui/             Streamlit client helpers and transcript export
+streamlit_app.py  the chat UI
+scripts/        smoke test, terminal debug chat, scenario runner
+tests/          pytest suite (fake model; Postgres tests skip without DATABASE_URL)
+```
+
 ## Current implementation
 
-- Prompts live in `app/agent/prompts.py`; model output schemas in `app/agent/state.py`.
-  The member and episode agents (`app/agent/resolvers.py`) call read-only, household-scoped
-  tools (`app/agent/tools.py`). When either can't decide, Q asks a clarifying question
+- Prompts live in `app/prompts/` (one module per role); model output schemas in `app/models/outputs.py`.
+  The member and episode agents (`app/agents/resolvers.py`) call read-only, household-scoped
+  tools (`app/agents/tools.py`). When either can't decide, Q asks a clarifying question
   (`ask_member` or `ask_episode`) using the agent's instructions.
   `Q_MODEL_MINI` serves every model step and consolidation; optional `Q_REASONING_EFFORT`
   (e.g. `low`, `high`) sets its reasoning effort.
@@ -94,7 +118,7 @@ in the response. A model failure returns 502; retry with the same key.
   (`Q_HANDOFF_DIR`).
 - Code selects emergency, doctor, clarification, general answer or home monitoring.
   Emergency and doctor responses are fixed. Synthetic policy defaults live in
-  `app/policy.py`; they are not clinically validated.
+  `app/triage/policy.py`; they are not clinically validated.
 - PostgreSQL stores messages, member facts, sessions and episodes. Follow-ups merge
   slots into the selected episode. Reported resolution and recurrence stay distinct.
 - Consolidation runs after session closure or a new session's idle-session check.
@@ -175,24 +199,3 @@ The out-of-scope capabilities plug in through `app/extensions.py`: pass an `Exte
 | Custom knowledge base | `knowledge(query) -> passages` | General-question replies get the passages as `reference` |
 | Lab report analysis | `lab_results(household_id, member_id) -> results` | A `lab_results` lookup for the intake and handoff agents, offered only when plugged in |
 | Telemedicine | `deliver_handoff(note)` | Called after the intake note is saved; a failure fails the turn (503), so Q never claims a handoff it didn't make |
-
-See [the implementation plan](q-implementation-plan.md) for this wiring pass and
-remaining work, and [the ideas log](q-ideas-log.md) for product/design rationale.
-
-## Architecture write-up
-
-The [HTML write-up](output/architecture/q-agent-loop.html) and
-[seven-page PDF](output/pdf/q-architecture-writeup.pdf) cover the problem, the agentic loop,
-key decisions and their reasons, evaluation (with the failures found and what each changed),
-observability, the roadmap and scaling path, and how to run the demo.
-The HTML embeds its diagram and works without external scripts.
-
-Regenerate both from the shared write-up content:
-
-```sh
-uv run --no-project --with reportlab --with pillow python scripts/build_writeup.py
-```
-
-The diagram source and its PDF raster asset live alongside the HTML. After editing
-the SVG, regenerate the PNG with `output/architecture/render-diagram.swift` before
-building the write-up.
