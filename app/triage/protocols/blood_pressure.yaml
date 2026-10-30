@@ -1,0 +1,60 @@
+# SYNTHETIC PLACEHOLDER: not clinically validated. Replace with the licensed guideline.
+id: blood_pressure
+title: High blood pressure reading
+source: synthetic-placeholder
+version: "0.2"
+complaints: [blood_pressure, high_blood_pressure, hypertension, bp]
+questions:
+  emergency:
+    - id: bp_chest_pain
+      sign: Chest pain with the high reading
+      ask: With this reading, is there any chest pain?
+    - id: severe_headache
+      sign: Severe headache
+      ask: Is there a severe headache?
+    - id: confusion
+      sign: Confusion
+      ask: Is there any confusion?
+    - id: one_sided_weakness
+      sign: Weakness or numbness on one side of the body
+      ask: Is there weakness or numbness on one side of the body?
+    - id: vision_changes
+      sign: Vision changes
+      ask: Are there any vision changes?
+  doctor_now:
+    - id: very_high_reading
+      sign: Reading 180/120 or higher
+      ask: What was the blood pressure reading?
+      rule:
+        any:
+          - {slot: systolic_bp, at_least: 180}
+          - {slot: diastolic_bp, at_least: 120}
+  doctor_24h:
+    - id: high_reading
+      sign: Reading 160/100 or higher
+      ask: What was the blood pressure reading, both numbers?
+      rule:
+        any:
+          - {slot: systolic_bp, at_least: 160}
+          - {slot: diastolic_bp, at_least: 100}
+    - id: dizziness
+      sign: Dizziness
+      ask: Is there any dizziness?
+    - id: headache
+      sign: Headache
+      ask: Is there a headache?
+  doctor_routine:
+    - id: raised_reading
+      sign: Reading 140/90 or higher
+      ask: What was the blood pressure reading, both numbers?
+      rule:
+        any:
+          - {slot: systolic_bp, at_least: 140}
+          - {slot: diastolic_bp, at_least: 90}
+home_care:
+  - Sit quietly for 5 minutes and repeat the reading, with the arm supported at heart level.
+  - Keep taking regular medicines as prescribed and write down each reading.
+watch_for:
+  - Chest pain, a severe headache, confusion, weakness on one side, or vision changes
+  - A reading of 180/120 or higher
+check_back_hours: 24

@@ -1,0 +1,9 @@
+{
+  "household_id": "demo",
+  "members": [
+    {"id": "demo-ravi", "name": "Ravi", "aliases": ["me", "myself"], "age_years": 38, "conditions": []},
+    {"id": "demo-asha", "name": "Asha", "aliases": ["mum", "mom", "my mother", "grandma"], "age_years": 72, "conditions": ["hypertension"]},
+    {"id": "demo-maya", "name": "Maya", "aliases": ["my daughter"], "age_years": 9, "conditions": []},
+    {"id": "demo-ashwin", "name": "Ashwin", "aliases": ["my son", "the baby", "little one"], "age_years": 2, "conditions": []}
+  ]
+}

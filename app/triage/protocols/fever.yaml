@@ -1,0 +1,58 @@
+# SYNTHETIC PLACEHOLDER: not clinically validated. Replace with the licensed guideline.
+id: fever
+title: Fever
+source: synthetic-placeholder
+version: "0.2"
+complaints: [fever, high_temperature, temperature]
+questions:
+  emergency:
+    - id: infant_under_3_months
+      sign: Infant under 3 months
+      rule: {age_below: 0.25}
+    - id: stiff_neck
+      sign: Stiff neck
+      ask: Is there a stiff neck?
+    - id: confused
+      sign: Confused or not making sense
+      ask: Are they confused or not making sense?
+    - id: hard_to_wake
+      sign: Very hard to wake
+      ask: Is it very hard to wake them?
+    - id: rash_not_fading
+      sign: Rash that doesn't fade under a pressed glass
+      ask: Is there a rash that doesn't fade when a glass is pressed against it?
+  doctor_now:
+    - id: very_high_temperature
+      sign: Temperature 40 C or higher
+      ask: What is the temperature?
+      rule: {slot: temperature_c, at_least: 40}
+    - id: drinking_less
+      sign: Drinking much less than usual
+      ask: Are they drinking much less than usual?
+    - id: less_urine
+      sign: Passing much less urine than usual
+      ask: Are they passing much less urine than usual?
+  doctor_24h:
+    - id: three_days_or_more
+      sign: Fever for 3 days or more
+      ask: How long has the fever lasted?
+      rule: {slot: duration_hours, at_least: 72}
+    - id: vulnerable_member
+      sign: Higher-risk member (65+ or a listed condition)
+      rule:
+        any:
+          - age_at_least: 65
+          - condition_in: [diabetes, kidney, copd, heart, immun]
+    - id: severe_symptoms
+      sign: Severely unwell overall
+      ask: How unwell are they overall - mild, moderate or severe?
+      rule: {slot: severity, equals: severe}
+home_care:
+  - Offer plenty of fluids and encourage rest.
+  - Dress in light clothing and keep the room comfortably cool.
+  - Check the temperature regularly and write down the readings.
+watch_for:
+  - Temperature of 40 C or higher, or a fever lasting more than 3 days
+  - A rash that doesn't fade under pressure, a stiff neck, confusion, or hard to wake
+  - Drinking very little or passing much less urine
+check_back_hours: 24

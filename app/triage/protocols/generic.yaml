@@ -1,0 +1,46 @@
+# SYNTHETIC PLACEHOLDER: not clinically validated. Replace with the licensed guideline.
+# Used when no protocol covers the complaint: a guideline, not a script. The intake agent chooses the
+# danger signs that fit this complaint (a sore throat: drooling, trouble breathing...); the levels and
+# the minimum are fixed here, so code still decides the outcome. Thresholds are deliberately lower.
+id: generic
+title: Other symptom
+source: synthetic-placeholder
+version: "0.3"
+complaints: []
+allow_home_care: false  # negative screening cannot establish safety for an uncovered complaint
+agent_signs:
+  emergency: 3   # complaint-specific signs that need emergency care, each ruled out before severity
+fallback_signs:  # asked in order only if the agent can't choose a sign
+  - {sign: "Getting rapidly worse", ask: "Is it getting rapidly worse?"}
+  - {sign: "Trouble breathing", ask: "Is there any trouble breathing?"}
+  - {sign: "Confused or not making sense", ask: "Are they confused or not making sense?"}
+questions:
+  doctor_now:
+    - id: severe
+      sign: Severe
+      ask: How severe is it - mild, moderate or severe?
+      rule: {slot: severity, equals: severe}
+  doctor_24h:
+    - id: vulnerable_and_moderate
+      sign: Moderate in a higher-risk member (65+ or a condition)
+      ask: How severe is it - mild, moderate or severe?
+      rule:
+        all:
+          - {slot: severity, equals: moderate}
+          - any:
+              - age_at_least: 65
+              - has_conditions: true
+    - id: a_week_or_more
+      sign: Going on for a week or more
+      ask: How long has it been going on?
+      rule: {slot: duration_hours, at_least: 168}
+  doctor_routine:
+    - id: three_days_or_more
+      sign: Going on for 3 days or more
+      ask: How long has it been going on?
+      rule: {slot: duration_hours, at_least: 72}
+home_care:
+  - Rest, keep up fluids, and note any changes.
+watch_for:
+  - It becomes severe, keeps getting worse, or new symptoms appear
+check_back_hours: 24

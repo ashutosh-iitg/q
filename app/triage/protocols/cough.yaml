@@ -1,0 +1,43 @@
+# SYNTHETIC PLACEHOLDER: not clinically validated. Replace with the licensed guideline.
+id: cough
+title: Cough
+source: synthetic-placeholder
+version: "0.2"
+complaints: [cough, wheeze, chest_cold]
+questions:
+  emergency:
+    - id: blue_lips
+      sign: Lips or face turning blue or grey
+      ask: Are the lips or face turning blue or grey?
+    - id: struggling_to_breathe
+      sign: Struggling to breathe
+      ask: Are they struggling to breathe?
+  doctor_now:
+    - id: coughing_blood
+      sign: Coughing up blood
+      ask: Are they coughing up blood?
+    - id: fast_breathing
+      sign: Breathing faster than usual
+      ask: Is their breathing faster than usual?
+    - id: wheeze_worse
+      sign: Wheeze getting worse
+      ask: Is a wheeze getting worse?
+  doctor_24h:
+    - id: three_weeks_or_more
+      sign: Cough for 3 weeks or more
+      ask: How long has the cough lasted?
+      rule: {slot: duration_hours, at_least: 504}
+    - id: lung_condition_member
+      sign: Known lung condition (asthma or COPD)
+      rule: {condition_in: [asthma, copd]}
+    - id: fever_with_cough
+      sign: Fever with the cough
+      ask: Is there a fever with the cough?
+home_care:
+  - Offer warm drinks and plenty of fluids.
+  - Honey in a warm drink can soothe a cough, but never give honey to a baby under 1 year.
+  - Keep away from smoke and rest.
+watch_for:
+  - Struggling to breathe, lips or face turning blue, or coughing up blood
+  - A cough lasting more than 3 weeks, or a high fever
+check_back_hours: 72

@@ -1,0 +1,413 @@
+{
+  "accounts": [
+    {
+      "household_id": "demo",
+      "members": [
+        {
+          "id": "demo-ravi",
+          "name": "Ravi",
+          "aliases": [
+            "me",
+            "myself"
+          ],
+          "age_years": 38,
+          "conditions": []
+        },
+        {
+          "id": "demo-asha",
+          "name": "Asha",
+          "aliases": [
+            "mum",
+            "mom",
+            "my mother",
+            "grandma"
+          ],
+          "age_years": 72,
+          "conditions": [
+            "hypertension"
+          ]
+        },
+        {
+          "id": "demo-maya",
+          "name": "Maya",
+          "aliases": [
+            "my daughter"
+          ],
+          "age_years": 9,
+          "conditions": []
+        },
+        {
+          "id": "demo-ashwin",
+          "name": "Ashwin",
+          "aliases": [
+            "my son",
+            "the baby",
+            "little one"
+          ],
+          "age_years": 2,
+          "conditions": []
+        }
+      ],
+      "name": "Sharma family"
+    },
+    {
+      "household_id": "demo-kapoor",
+      "name": "Kapoor family",
+      "members": [
+        {
+          "id": "demo-kapoor-neha",
+          "name": "Neha",
+          "age_years": 29,
+          "conditions": [],
+          "aliases": [
+            "me"
+          ]
+        },
+        {
+          "id": "demo-kapoor-arjun",
+          "name": "Arjun",
+          "age_years": 31,
+          "conditions": [],
+          "aliases": [
+            "my husband"
+          ]
+        }
+      ]
+    },
+    {
+      "household_id": "demo-iyer",
+      "name": "Iyer family",
+      "members": [
+        {
+          "id": "demo-iyer-meera",
+          "name": "Meera",
+          "age_years": 34,
+          "conditions": [
+            "hypothyroidism"
+          ],
+          "aliases": [
+            "me"
+          ]
+        },
+        {
+          "id": "demo-iyer-karthik",
+          "name": "Karthik",
+          "age_years": 36,
+          "conditions": [],
+          "aliases": [
+            "my husband"
+          ]
+        },
+        {
+          "id": "demo-iyer-tara",
+          "name": "Tara",
+          "age_years": 0.5,
+          "conditions": [],
+          "aliases": [
+            "my daughter",
+            "the baby"
+          ]
+        }
+      ]
+    },
+    {
+      "household_id": "demo-khan",
+      "name": "Khan family",
+      "members": [
+        {
+          "id": "demo-khan-sameer",
+          "name": "Sameer",
+          "age_years": 42,
+          "conditions": [
+            "type 2 diabetes"
+          ],
+          "aliases": [
+            "me"
+          ]
+        },
+        {
+          "id": "demo-khan-nadia",
+          "name": "Nadia",
+          "age_years": 39,
+          "conditions": [],
+          "aliases": [
+            "my wife"
+          ]
+        },
+        {
+          "id": "demo-khan-ayaan",
+          "name": "Ayaan",
+          "age_years": 13,
+          "conditions": [
+            "asthma"
+          ],
+          "aliases": [
+            "my son"
+          ]
+        },
+        {
+          "id": "demo-khan-zoya",
+          "name": "Zoya",
+          "age_years": 7,
+          "conditions": [],
+          "aliases": [
+            "my daughter"
+          ]
+        }
+      ]
+    },
+    {
+      "household_id": "demo-patel",
+      "name": "Patel family",
+      "members": [
+        {
+          "id": "demo-patel-priya",
+          "name": "Priya",
+          "age_years": 40,
+          "conditions": [],
+          "aliases": [
+            "me"
+          ]
+        },
+        {
+          "id": "demo-patel-dev",
+          "name": "Dev",
+          "age_years": 43,
+          "conditions": [
+            "hypertension"
+          ],
+          "aliases": [
+            "my husband"
+          ]
+        },
+        {
+          "id": "demo-patel-rohan",
+          "name": "Rohan",
+          "age_years": 16,
+          "conditions": [],
+          "aliases": [
+            "my son"
+          ]
+        },
+        {
+          "id": "demo-patel-diya",
+          "name": "Diya",
+          "age_years": 10,
+          "conditions": [],
+          "aliases": [
+            "my daughter"
+          ]
+        },
+        {
+          "id": "demo-patel-kanta",
+          "name": "Kanta",
+          "age_years": 76,
+          "conditions": [
+            "osteoarthritis",
+            "type 2 diabetes"
+          ],
+          "aliases": [
+            "my mother",
+            "grandma"
+          ]
+        }
+      ]
+    },
+    {
+      "household_id": "demo-das",
+      "name": "Das family",
+      "members": [
+        {
+          "id": "demo-das-ananya",
+          "name": "Ananya",
+          "age_years": 22,
+          "conditions": [],
+          "aliases": [
+            "me"
+          ]
+        },
+        {
+          "id": "demo-das-ishaan",
+          "name": "Ishaan",
+          "age_years": 19,
+          "conditions": [],
+          "aliases": [
+            "my brother"
+          ]
+        },
+        {
+          "id": "demo-das-soma",
+          "name": "Soma",
+          "age_years": 49,
+          "conditions": [],
+          "aliases": [
+            "my mother"
+          ]
+        }
+      ]
+    },
+    {
+      "household_id": "demo-fernandes",
+      "name": "Fernandes family",
+      "members": [
+        {
+          "id": "demo-fernandes-maria",
+          "name": "Maria",
+          "age_years": 68,
+          "conditions": [
+            "hypertension",
+            "chronic kidney disease"
+          ],
+          "aliases": [
+            "me"
+          ]
+        },
+        {
+          "id": "demo-fernandes-joseph",
+          "name": "Joseph",
+          "age_years": 71,
+          "conditions": [
+            "COPD"
+          ],
+          "aliases": [
+            "my husband"
+          ]
+        }
+      ]
+    },
+    {
+      "household_id": "demo-singh",
+      "name": "Singh family",
+      "members": [
+        {
+          "id": "demo-singh-harpreet",
+          "name": "Harpreet",
+          "age_years": 45,
+          "conditions": [],
+          "aliases": [
+            "me"
+          ]
+        },
+        {
+          "id": "demo-singh-simran",
+          "name": "Simran",
+          "age_years": 42,
+          "conditions": [
+            "migraine"
+          ],
+          "aliases": [
+            "my wife"
+          ]
+        },
+        {
+          "id": "demo-singh-kabir",
+          "name": "Kabir",
+          "age_years": 17,
+          "conditions": [
+            "type 1 diabetes"
+          ],
+          "aliases": [
+            "my son"
+          ]
+        },
+        {
+          "id": "demo-singh-noor",
+          "name": "Noor",
+          "age_years": 4,
+          "conditions": [],
+          "aliases": [
+            "my daughter"
+          ]
+        }
+      ]
+    },
+    {
+      "household_id": "demo-reddy",
+      "name": "Reddy family",
+      "members": [
+        {
+          "id": "demo-reddy-lakshmi",
+          "name": "Lakshmi",
+          "age_years": 33,
+          "conditions": [],
+          "aliases": [
+            "me"
+          ]
+        },
+        {
+          "id": "demo-reddy-vikram",
+          "name": "Vikram",
+          "age_years": 35,
+          "conditions": [],
+          "aliases": [
+            "my husband"
+          ]
+        },
+        {
+          "id": "demo-reddy-anika",
+          "name": "Anika",
+          "age_years": 8,
+          "conditions": [],
+          "aliases": [
+            "my daughter"
+          ]
+        },
+        {
+          "id": "demo-reddy-aditya",
+          "name": "Aditya",
+          "age_years": 3,
+          "conditions": [],
+          "aliases": [
+            "my son"
+          ]
+        },
+        {
+          "id": "demo-reddy-savitri",
+          "name": "Savitri",
+          "age_years": 65,
+          "conditions": [],
+          "aliases": [
+            "my mother",
+            "grandma"
+          ]
+        }
+      ]
+    },
+    {
+      "household_id": "demo-bose",
+      "name": "Bose family",
+      "members": [
+        {
+          "id": "demo-bose-riya",
+          "name": "Riya",
+          "age_years": 28,
+          "conditions": [
+            "asthma"
+          ],
+          "aliases": [
+            "me"
+          ]
+        },
+        {
+          "id": "demo-bose-amit",
+          "name": "Amit",
+          "age_years": 30,
+          "conditions": [],
+          "aliases": [
+            "my husband"
+          ]
+        },
+        {
+          "id": "demo-bose-mili",
+          "name": "Mili",
+          "age_years": 1,
+          "conditions": [],
+          "aliases": [
+            "my daughter",
+            "the baby"
+          ]
+        }
+      ]
+    }
+  ]
+}

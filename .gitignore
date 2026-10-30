@@ -1,0 +1,28 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Local secrets
+.env
+
+# Doctor-handoff intake notes: synthetic health data, never committed
+handoffs/
+
+# macOS and local tooling
+.DS_Store
+.claude/
+
+# Not committed for now: write-up, design notes, transcripts and generated output
+*.pdf
+output/
+transcripts/
+q-*.md
+agent-architecture-book-patterns.md
+agentic-ai-architecture-development.md

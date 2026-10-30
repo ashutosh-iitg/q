@@ -1,0 +1,62 @@
+# SYNTHETIC PLACEHOLDER: not clinically validated. Replace with the licensed guideline.
+id: chest_pain
+title: Chest pain
+source: synthetic-placeholder
+version: "0.2"
+complaints: [chest_pain, chest_tightness, chest_pressure, chest_discomfort]
+questions:
+  emergency:
+    - id: pain_now
+      sign: Chest pain happening now
+      ask: Is the chest pain happening right now?
+    - id: lasted_over_5_min
+      sign: An episode of pain lasting over 5 minutes
+      ask: Has any episode of pain lasted longer than 5 minutes?
+    - id: breathless
+      sign: Shortness of breath with the pain
+      ask: Is there shortness of breath with the pain?
+    - id: sweating
+      sign: Sweating with the pain
+      ask: Is there sweating with the pain?
+    - id: nausea
+      sign: Nausea with the pain
+      ask: Is there nausea with the pain?
+    - id: faint
+      sign: Feeling faint or passing out
+      ask: Has there been any feeling faint or passing out?
+    - id: pain_spreads
+      sign: Pain spreading to the arm, jaw, neck or back
+      ask: Does the pain spread to the arm, jaw, neck or back?
+  doctor_now:
+    - id: cardiac_risk_member
+      sign: Higher cardiac risk (40+ or a listed condition)
+      rule:
+        any:
+          - age_at_least: 40
+          - condition_in: [hypertension, diabetes, heart, cholesterol, kidney]
+    - id: exertion_trigger
+      sign: Pain brought on by exertion and eased by rest
+      ask: Does the pain come on with activity or exertion and ease with rest?
+  doctor_24h:
+    - id: fever
+      sign: Fever with the chest pain
+      ask: Is there a fever along with the chest pain?
+    - id: cough
+      sign: Cough with the chest pain
+      ask: Is there a cough along with the chest pain?
+    - id: coming_and_going_days
+      sign: Pain coming and going for more than 3 days
+      ask: Has the pain been coming and going for more than 3 days?
+      rule: {slot: duration_hours, at_least: 72}
+  doctor_routine:
+    - id: similar_before
+      sign: Similar pain before
+      ask: Has there been pain like this before?
+home_care:
+  - Rest and avoid heavy lifting or strenuous activity until the pain settles.
+  - Note when the pain happens, what brings it on and how long it lasts.
+  - A warm compress may ease pain that comes from a strained chest muscle.
+watch_for:
+  - The pain lasts longer than 5 minutes, happens at rest, or spreads to the arm, jaw, neck or back
+  - Shortness of breath, sweating, nausea or feeling faint
+check_back_hours: 12
