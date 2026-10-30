@@ -19,6 +19,17 @@ def chat_model() -> ChatOpenAI:
                       reasoning_effort=os.environ.get("Q_REASONING_EFFORT", "").strip() or None)
 
 
+ENGINES = ("graph", "deep")
+
+
+def engine_name() -> str:
+    """Q_ENGINE picks the turn engine: graph (default) or deep (the deepagents supervisor)."""
+    name = os.environ.get("Q_ENGINE", "").strip() or "graph"
+    if name not in ENGINES:
+        raise RuntimeError(f"Q_ENGINE must be one of {', '.join(ENGINES)}, not {name!r}")
+    return name
+
+
 def handoff_dir() -> Path:
     """Where doctor-handoff intake notes are saved, one JSON file per escalation."""
     return Path(os.environ.get("Q_HANDOFF_DIR", "").strip() or DEFAULT_HANDOFF_DIR)

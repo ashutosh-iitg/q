@@ -13,7 +13,8 @@ from pydantic import ValidationError
 from api.schemas import MessageIn, MessageOut, PathId
 from app.agents.handoff.note import HandoffError, read_note
 from app.agents.loop import ModelOutputError
-from app.config import chat_model, handoff_dir, require_env
+from app.config import chat_model, engine_name, handoff_dir, require_env
+from app.deep.engine import DeepEngine
 from app.demo import demo_accounts
 from app.graph.build import build_graph
 from app.memory.consolidation import Consolidate, consolidate_idle_sessions, consolidate_session, llm_consolidator
@@ -34,7 +35,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         mini = chat_model()
         app.state.consolidate = llm_consolidator(mini)
         app.state.handoff_dir = handoff_dir()
-        app.state.agent = build_graph(store, mini, handoff_dir=app.state.handoff_dir)
+        app.state.engine = engine_name()
+        build = DeepEngine if app.state.engine == "deep" else build_graph
+        app.state.agent = build(store, mini, handoff_dir=app.state.handoff_dir)
         yield
     finally:
         store.close()
@@ -55,6 +58,8 @@ ConsolidatorDep = Annotated[Consolidate, Depends(get_consolidator)]
 
 def create_app() -> FastAPI:
     app = FastAPI(title="Q", lifespan=lifespan)
+    app.state.engine = "graph"  # the lifespan sets the configured engine
+    app.state.turn_callbacks = []  # optional callback handlers for every turn, e.g. a usage meter
 
     @app.get("/health")
     def health() -> dict[str, str]:
@@ -85,7 +90,8 @@ def create_app() -> FastAPI:
                  "text": message.text, "profile_id": message.profile_id},
                 config={
                     "run_name": "q.turn",
-                    "tags": ["turn"],
+                    "tags": ["turn", f"engine:{request.app.state.engine}"],
+                    "callbacks": list(request.app.state.turn_callbacks),
                     "metadata": {"household_id": household_id, "session_id": session_id, "turn_id": turn_id},
                 },
             )
