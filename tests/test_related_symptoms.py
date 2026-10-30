@@ -5,11 +5,11 @@ from types import SimpleNamespace
 
 import pytest
 
-from app.agent.intake import merge_associated
-from app.agent.intake_agent import IntakeQuestions
-from app.agent.state import AssociatedSymptom
-from app.policy import Decision, rule
+from app.agents.intake.merge import merge_associated
+from app.agents.intake.questions import IntakeQuestions
+from app.models.outputs import AssociatedSymptom
 from app.triage.engine import profile, triage
+from app.triage.policy import Decision, rule
 from app.triage.protocol import load_protocols
 from tests.fakes import FakeModel, agent_payload, answered, draft, episode, extraction, member, observation, screen
 from tests.helpers import new_id, post

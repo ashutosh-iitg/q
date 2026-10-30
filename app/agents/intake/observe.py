@@ -13,7 +13,6 @@ whether each is still there, so a fever that has gone is never treated, asked ab
 current. A question asked back about Q's last question ("who do you mean?") keeps the intake going.
 """
 
-import logging
 from collections.abc import Mapping
 from datetime import UTC, datetime
 from typing import Any
@@ -21,20 +20,19 @@ from uuid import uuid4
 
 from langchain_core.language_models import BaseChatModel
 from langchain_core.tools import BaseTool, tool
-
-from app.agent.evidence import is_quoted
-from app.agent.loop import ModelOutputError, run_agent
 from pydantic import ValidationError
 
-from app.agent.nodes import NO_OBSERVATION, extraction_from
-from app.agent.prompts import OBSERVE_PROMPT
-from app.agent.state import Answer, AssociatedSymptom, Episode, Member, MemberFact, Observation, Slots, TurnState
-from app.agent.tools import to_json
-from app.store import Store, normalize_subject
+from app.agents.extraction import NO_OBSERVATION, extraction_from
+from app.agents.intake.merge import merge_associated, merge_findings
+from app.agents.loop import ModelOutputError, run_agent
+from app.agents.tools import to_json
+from app.memory.store import Store, normalize_subject
+from app.models.outputs import Observation, Slots
+from app.models.records import Episode, Member, MemberFact
+from app.models.turn import TurnState
+from app.prompts.intake import OBSERVE_PROMPT
 from app.triage.engine import NEW_SIGN, Profile, profile, triage
 from app.triage.protocol import Protocol, protocol_for, with_signs
-
-logger = logging.getLogger(__name__)
 
 
 def protocol_tools(protocols: Mapping[str, Protocol]) -> list[BaseTool]:
@@ -113,51 +111,6 @@ def observe(state: TurnState, *, model: BaseChatModel, store: Store, protocols: 
     unanswered = bool(episode and last and found.pending and found.pending[0].id == last.id)
     return {**result, "protocol_id": protocol.id, "findings": findings, "triage": found,
             "associated": associated, "unanswered_last_time": unanswered}
-
-
-def merge_associated(previous: Mapping[str, Any], reported: list[AssociatedSymptom], text: str) -> dict[str, Any]:
-    """The episode's other symptoms with this message's quoted reports applied; the latest status wins."""
-    now = datetime.now(UTC).isoformat()
-    supported = {subject: {"status": s.status, "quote": s.quote, "at": now}
-                 for s in reported if (subject := normalize_subject(s.symptom)) and is_quoted(s.quote, text)}
-    if len(supported) < len(reported):
-        logger.warning("Dropped %d related symptoms not supported by the message", len(reported) - len(supported))
-    return {**previous, **supported}
-
-
-def merge_findings(protocol: Protocol, episode: Episode | None, answers: list[Answer], text: str, *,
-                   session_id: str | None = None, last_asked: tuple[str, str] | None = None) -> dict[str, Any]:
-    """Earlier findings plus this message's supported answers.
-
-    Each answer records the session it was given in and, when it answers the question Q asked last
-    turn, Q's actual words (last_asked: question ID, message), so a note can show what was asked.
-    """
-    previous = {k: kept for k, v in (episode.findings if episode else {}).items()
-                if (kept := _unanswered(v) if _ask_again(protocol, k, v, episode, session_id) else dict(v))}
-    now = datetime.now(UTC).isoformat()
-    # A chosen sign's entry also holds its definition (sign, level, ask), so answers are merged into it.
-    supported = {a.question_id: {**previous.get(a.question_id, {}), "value": a.value, "quote": a.quote, "at": now,
-                                 "session_id": session_id,
-                                 "asked": last_asked[1] if last_asked and last_asked[0] == a.question_id else None}
-                 for a in answers if protocol.question(a.question_id) and is_quoted(a.quote, text)}
-    if len(supported) < len(answers):
-        logger.warning("Dropped %d answers not supported by the message or protocol", len(answers) - len(supported))
-    return {**previous, **supported}
-
-
-def _ask_again(protocol: Protocol, question_id: str, finding: Mapping[str, Any], episode: Episode | None,
-               session_id: str | None) -> bool:
-    """An emergency answer is asked again at a check-back, or when it was given in an earlier session."""
-    question = protocol.question(question_id)
-    level = question.level if question else finding.get("level")
-    if level != "emergency" or "value" not in finding:
-        return False
-    return bool(episode and episode.status == "monitoring") or finding.get("session_id") != session_id
-
-
-def _unanswered(finding: Mapping[str, Any]) -> dict[str, Any]:
-    """The finding without its answer; a chosen sign keeps its definition so it can be asked again."""
-    return {k: finding[k] for k in ("sign", "level", "ask") if k in finding}
 
 
 def _protocol_of(episode: Episode, protocols: Mapping[str, Protocol]) -> Protocol:

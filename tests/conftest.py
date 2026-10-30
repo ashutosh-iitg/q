@@ -10,9 +10,9 @@ import pytest
 from fastapi.testclient import TestClient
 
 from api.main import create_app
-from app.agent.graph import build_graph
 from app.extensions import Extensions
-from app.store import Store
+from app.graph.build import build_graph
+from app.memory.store import Store
 from tests.helpers import new_id
 
 

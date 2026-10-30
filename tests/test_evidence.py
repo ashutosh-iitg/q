@@ -1,6 +1,6 @@
 import pytest
 
-from app.agent.evidence import is_quoted
+from app.agents.evidence import is_quoted
 
 TEXT = "No, it's not happening right now. No sweating or breathlessness, and it doesn't spread."
 

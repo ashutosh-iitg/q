@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import Path
 from pydantic import BaseModel, Field, StringConstraints
 
-from app.policy import Decision
+from app.triage.policy import Decision
 
 MAX_MESSAGE_CHARS = 2000
 ID_PATTERN = r"^[A-Za-z0-9_-]{1,64}$"

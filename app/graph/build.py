@@ -14,18 +14,18 @@ from langchain_openai import ChatOpenAI
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
-from app.agent import handoff, intake, intake_agent, nodes, resolvers
-from app.agent.nodes import route_after_decide  # noqa: F401  (re-exported for callers and tests)
-from app.agent.state import Screen, TurnOutput, TurnState
+from app.agents.handoff.note import handoff
+from app.agents.intake.observe import observe
+from app.agents.intake.questions import intake_agent
+from app.agents.resolvers import resolve_episode, resolve_member
 from app.extensions import Extensions
-from app.store import Store
+from app.graph.nodes import decide, load_context, reconcile, save_turn, screen
+from app.graph.replies import fixed_reply, respond
+from app.graph.routing import PARALLEL_BRANCHES, route_after_decide, route_after_load, route_after_reconcile
+from app.memory.store import Store
+from app.models.outputs import Screen
+from app.models.turn import TurnOutput, TurnState
 from app.triage.protocol import Protocol, load_protocols
-
-PARALLEL_BRANCHES = ["screen", "resolve_member"]
-
-
-def route_after_load(state: TurnState) -> str | list[str]:
-    return END if state["replayed"] else PARALLEL_BRANCHES
 
 
 def build_graph(
@@ -35,28 +35,28 @@ def build_graph(
     protocols = protocols or load_protocols()
     screener = model.with_structured_output(Screen, method="json_schema", strict=True, prompt_cache_key="q:Screen")
     graph = StateGraph(TurnState, output_schema=TurnOutput)
-    graph.add_node("load_context", partial(nodes.load_context, store=store))
-    graph.add_node("screen", partial(nodes.screen, screener=screener))
-    graph.add_node("resolve_member", partial(resolvers.resolve_member, model=model))
-    graph.add_node("resolve_episode", partial(resolvers.resolve_episode, model=model, store=store))
-    graph.add_node(nodes.reconcile)
-    graph.add_node("observe", partial(intake.observe, model=model, store=store, protocols=protocols))
-    graph.add_node(nodes.decide)
-    graph.add_node("handoff", partial(handoff.handoff, model=model, store=store, directory=handoff_dir,
+    graph.add_node("load_context", partial(load_context, store=store))
+    graph.add_node("screen", partial(screen, screener=screener))
+    graph.add_node("resolve_member", partial(resolve_member, model=model))
+    graph.add_node("resolve_episode", partial(resolve_episode, model=model, store=store))
+    graph.add_node(reconcile)
+    graph.add_node("observe", partial(observe, model=model, store=store, protocols=protocols))
+    graph.add_node(decide)
+    graph.add_node("handoff", partial(handoff, model=model, store=store, directory=handoff_dir,
                                       lab_results=extensions.lab_results, deliver=extensions.deliver_handoff))
-    graph.add_node(nodes.fixed_reply)
-    graph.add_node("intake_agent", partial(intake_agent.intake_agent, model=model, store=store,
+    graph.add_node(fixed_reply)
+    graph.add_node("intake_agent", partial(intake_agent, model=model, store=store,
                                            lab_results=extensions.lab_results))
-    graph.add_node("respond", partial(nodes.respond, model=model, knowledge=extensions.knowledge))
-    graph.add_node("save_turn", partial(nodes.save_turn, store=store))
+    graph.add_node("respond", partial(respond, model=model, knowledge=extensions.knowledge))
+    graph.add_node("save_turn", partial(save_turn, store=store))
 
     graph.add_edge(START, "load_context")
     graph.add_conditional_edges("load_context", route_after_load, [END, *PARALLEL_BRANCHES])
     graph.add_edge("resolve_member", "resolve_episode")
     graph.add_edge(["screen", "resolve_episode"], "reconcile")
-    graph.add_conditional_edges("reconcile", nodes.route_after_reconcile, ["observe", "decide"])
+    graph.add_conditional_edges("reconcile", route_after_reconcile, ["observe", "decide"])
     graph.add_edge("observe", "decide")
-    graph.add_conditional_edges("decide", nodes.route_after_decide,
+    graph.add_conditional_edges("decide", route_after_decide,
                                 ["handoff", "fixed_reply", "intake_agent", "respond"])
     graph.add_edge("handoff", "fixed_reply")
     graph.add_edge("fixed_reply", "save_turn")

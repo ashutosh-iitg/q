@@ -3,12 +3,11 @@
 import pytest
 from langchain_core.messages import AIMessage, ToolMessage
 
-from app.agent.intake_agent import IntakeQuestions
-from app.agent.loop import MAX_LOOKUP_ROUNDS
-from app.agent.resolvers import MAX_AGENT_STEPS
-from app.agent.state import EpisodeResolution, MemberResolution, Observation, Screen
-from app.policy import FIXED_REPLIES, Decision
-from app.store import EpisodeWrite
+from app.agents.intake.questions import IntakeQuestions
+from app.agents.loop import MAX_AGENT_STEPS, MAX_LOOKUP_ROUNDS
+from app.memory.writes import EpisodeWrite
+from app.models.outputs import EpisodeResolution, MemberResolution, Observation, Screen
+from app.triage.policy import FIXED_REPLIES, Decision
 from tests.fakes import HANDOFF, FakeModel, agent_payload, answered, call, episode, member, observation, screen
 from tests.helpers import fever_episode, make_turn, new_id, post
 
@@ -281,8 +280,8 @@ def test_agent_that_never_answers_falls_back_to_asking(store, household, api_cli
 
 @pytest.mark.integration
 def test_model_failure_is_retryable_without_partial_turn(store, household, api_client):
-    from openai import APITimeoutError
     import httpx
+    from openai import APITimeoutError
 
     household_id, _, _ = household
     session = new_id("s")
@@ -342,7 +341,7 @@ def test_turn_trace_nests_agent_tools_and_groups_replay(store, household, api_cl
 
 
 def test_a_dropped_answer_leaves_no_call_in_the_message_content():
-    from app.agent.loop import _only
+    from app.agents.loop import _only
 
     lookup = {"name": "list_members", "args": {}, "id": "call_lookup"}
     reply = AIMessage(content=[{"type": "reasoning", "id": "rs_1"},

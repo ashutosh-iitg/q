@@ -11,10 +11,10 @@ from typing import Any
 
 from langchain_core.tools import BaseTool, tool
 
-from app.agent.state import SessionContext
-from app.consolidation import _json_default, _plain
 from app.extensions import LabResults
-from app.store import Store
+from app.memory.serialize import json_default, plain
+from app.memory.store import Store
+from app.models.records import SessionContext
 
 
 def to_json(payload: Any) -> str:
@@ -23,7 +23,7 @@ def to_json(payload: Any) -> str:
     def default(value: Any) -> Any:
         if isinstance(value, datetime):
             return f"{value.isoformat()} ({_days_from_today(value)})"
-        return _plain(value) if hasattr(value, "__dataclass_fields__") else _json_default(value)
+        return plain(value) if hasattr(value, "__dataclass_fields__") else json_default(value)
     return json.dumps(payload, default=default)
 
 

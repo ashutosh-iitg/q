@@ -1,23 +1,24 @@
+import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-import logging
 from typing import Annotated
 from uuid import uuid4
 
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request
 from langchain_core.tracers.langchain import wait_for_all_tracers
 from openai import APIError
-from pydantic import ValidationError
 from psycopg_pool import PoolTimeout
+from pydantic import ValidationError
 
 from api.schemas import MessageIn, MessageOut, PathId
-from app.agent.graph import build_graph
-from app.agent.handoff import HandoffError, read_note
-from app.agent.loop import ModelOutputError
+from app.agents.handoff.note import HandoffError, read_note
+from app.agents.loop import ModelOutputError
 from app.config import chat_model, handoff_dir, require_env
 from app.demo import demo_accounts
-from app.consolidation import Consolidate, consolidate_idle_sessions, consolidate_session, llm_consolidator
-from app.store import SessionOwnershipError, Store, TurnConflictError
+from app.graph.build import build_graph
+from app.memory.consolidation import Consolidate, consolidate_idle_sessions, consolidate_session, llm_consolidator
+from app.memory.store import Store
+from app.memory.writes import SessionOwnershipError, TurnConflictError
 
 logger = logging.getLogger(__name__)
 

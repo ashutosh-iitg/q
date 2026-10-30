@@ -250,8 +250,16 @@ def build_pdf() -> None:
     from reportlab.lib import colors
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.styles import ParagraphStyle
-    from reportlab.platypus import (Image, KeepTogether, PageBreak, Paragraph, Preformatted, SimpleDocTemplate,
-                                    Table, TableStyle)
+    from reportlab.platypus import (
+        Image,
+        KeepTogether,
+        PageBreak,
+        Paragraph,
+        Preformatted,
+        SimpleDocTemplate,
+        Table,
+        TableStyle,
+    )
 
     PDF.parent.mkdir(parents=True, exist_ok=True)
     ink, muted, accent, rule, wash = map(colors.HexColor, ("#182d3d", "#526575", "#35628a", "#dce4ea", "#f2f6f9"))

@@ -1,42 +1,22 @@
-"""Graph nodes. Agents live in resolvers.py, intake.py and handoff.py; prompts in prompts.py."""
+"""Graph nodes around the agents: load context, screen, reconcile, decide, save."""
 
 from datetime import UTC, datetime, timedelta
 
 from langchain_core.runnables import Runnable
 
-from app.agent.evidence import is_quoted
-from app.agent.loop import ModelOutputError
-from app.agent.prompts import RESPOND_PROMPT, SCREEN_PROMPT
-from app.agent.state import (
-    Clarification, EpisodeResolution, Extraction, Member, MemberResolution, Observation, Screen, Slots, TurnState,
-)
-from app.agent.tools import to_json
-from app.extensions import Knowledge
-from app.policy import FIXED_REPLIES, GENERAL_WATCH_FOR, URGENCY_ADVICE, Decision, doctor_urgency, rule
-from app.store import EpisodeWrite, FactWrite, Store, TurnWrite, normalize_subject
+from app.agents.evidence import is_quoted
+from app.agents.extraction import NO_OBSERVATION, extraction_from
+from app.agents.loop import ModelOutputError
+from app.agents.tools import to_json
+from app.memory.store import Store, normalize_subject
+from app.memory.writes import EpisodeWrite, FactWrite, TurnWrite
+from app.models.outputs import EpisodeResolution, MemberResolution, Screen
+from app.models.records import Clarification, Member
+from app.models.turn import TurnState
+from app.prompts.screen import SCREEN_PROMPT
+from app.triage.policy import Decision, doctor_urgency, rule
 
 DEFAULT_CHECK_BACK_HOURS = 24
-OPEN_INTAKE_WINDOW = timedelta(days=1)  # an intake left unfinished longer ago is no longer "in progress"
-
-# What a turn that stops at a clarifying question records: nothing observed yet.
-NO_OBSERVATION = Observation(
-    intent="other", complaint=None, slots=Slots.model_validate(dict.fromkeys(Slots.model_fields)),
-    answers=[], associated=[], resolved=False, facts=[],
-)
-
-
-def render_context(state: TurnState, **extra) -> str:
-    # Stable fields first and this message last, so a prompt cache can reuse more of the prefix.
-    return to_json({"context": state["context"], "profile_id": state.get("profile_id"), **extra,
-                    "text": state["text"], "now": datetime.now(UTC)})
-
-
-def other_open_intakes(state: TurnState) -> list[dict[str, str]]:
-    """Other recent intakes still unfinished, so Q comes back to them instead of dropping them."""
-    context, cutoff = state["context"], datetime.now(UTC) - OPEN_INTAKE_WINDOW
-    names = {m.id: m.name for m in context.members}
-    return [{"member": names.get(e.member_id, e.member_id), "complaint": e.complaint} for e in context.episodes
-            if e.status == "triaging" and e.id != state.get("episode_id") and e.updated_at >= cutoff]
 
 
 def load_context(state: TurnState, *, store: Store) -> TurnState:
@@ -102,71 +82,11 @@ def _clarification(
     return None
 
 
-def extraction_from(state: TurnState, member_id: str | None, observation: Observation) -> Extraction:
-    found = state["screen"]
-    return Extraction(
-        member_id=member_id, episode_id=None,
-        intent="doctor_request" if found.doctor_requested else observation.intent,
-        complaint=observation.complaint, slots=observation.slots, red_flags=found.red_flags,
-        doctor_flags=found.doctor_flags, resolved=observation.resolved, facts=observation.facts,
-    )
-
-
-def route_after_reconcile(state: TurnState) -> str:
-    return "decide" if state["clarification"] else "observe"
-
-
 def decide(state: TurnState) -> TurnState:
     triage = state.get("triage")
     decision, reason = rule(state["extraction"], state["context"], state.get("clarification"), triage)
     urgency = doctor_urgency(reason, triage) if decision == Decision.DOCTOR else None
     return {"decision": decision, "decision_reason": reason, "urgency": urgency}
-
-
-def route_after_decide(state: TurnState) -> str:
-    """Doctor decisions hand the case over before replying; emergencies reply at once; the intake
-    agent asks the protocol's next questions."""
-    if state["decision"] == Decision.DOCTOR:
-        return "handoff"
-    if state["decision"] == Decision.ASK and state.get("triage"):
-        return "intake_agent"
-    return "fixed_reply" if state["decision"] in FIXED_REPLIES else "respond"
-
-
-def fixed_reply(state: TurnState) -> TurnState:
-    reply = FIXED_REPLIES[state["decision"]]
-    if state.get("urgency"):
-        reply += " " + URGENCY_ADVICE[state["urgency"]]
-    return {"reply": reply}
-
-
-def respond(state: TurnState, *, model: Runnable, knowledge: Knowledge | None = None) -> TurnState:
-    # A plugged-in knowledge base grounds general answers (see app/extensions.py).
-    reference = knowledge(state["text"]) if knowledge and state["decision"] == Decision.ANSWER else None
-    response = model.invoke([
-        ("system", RESPOND_PROMPT),
-        ("human", render_context(state, decision=state["decision"],
-                                 extraction=state["extraction"].model_dump(),
-                                 clarification=state.get("clarification"),
-                                 associated_symptoms=state.get("associated"),
-                                 other_open_intakes=other_open_intakes(state), reference=reference)),
-    ], config={"run_name": "reply"}, prompt_cache_key="q:reply")
-    reply = response.text.strip()
-    if not reply:
-        raise ModelOutputError("Empty model response")
-    if state["decision"] == Decision.HOME_MONITORING:
-        reply += "\n\n" + home_care_advice(state)
-    return {"reply": reply}
-
-
-def home_care_advice(state: TurnState) -> str:
-    """Precautions, warning signs and check-back, from the protocol: fixed text, not generated."""
-    protocol = state["triage"].protocol
-    lines = ["Precautions:", *(f"- {line}" for line in protocol.home_care),
-             "Get help sooner if:", *(f"- {line}" for line in protocol.watch_for),
-             GENERAL_WATCH_FOR,
-             f"Check back with Q in {protocol.check_back_hours} hours with an update."]
-    return "\n".join(lines)
 
 
 def save_turn(state: TurnState, *, store: Store) -> TurnState:

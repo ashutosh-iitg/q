@@ -8,9 +8,9 @@ from langchain_core.runnables import RunnableLambda
 from langchain_core.tools import BaseTool
 from pydantic import BaseModel
 
-from app.agent.handoff import IntakeNoteDraft
-from app.agent.intake_agent import IntakeQuestions, NewSign
-from app.agent.state import EpisodeResolution, Extraction, MemberResolution, Observation, Screen, Slots
+from app.agents.handoff.draft import IntakeNoteDraft
+from app.agents.intake.questions import IntakeQuestions, NewSign
+from app.models.outputs import EpisodeResolution, Extraction, MemberResolution, Observation, Screen, Slots
 from tests.helpers import new_id
 
 EMPTY_SLOTS = {name: None for name in Slots.model_fields}
@@ -88,7 +88,7 @@ class FakeModel:
 
     A role without a script returns its default on every call. A script is a list consumed one model
     call at a time; an item is an output, or a callable taking that call's input and returning one.
-    Agents may also return AIMessages with tool calls (lookups, see app.agent.loop); a bare answer
+    Agents may also return AIMessages with tool calls (lookups, see app.agents.loop); a bare answer
     is submitted for them.
     """
 

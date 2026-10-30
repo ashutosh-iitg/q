@@ -5,12 +5,12 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from app.agent.handoff import NO_NARRATIVE
-from app.agent.loop import MAX_AGENT_STEPS
-from app.agent.intake_agent import IntakeQuestions
-from app.agent.state import Observation
-from app.policy import FIXED_REPLIES, URGENCY_ADVICE, Decision
-from app.store import EpisodeWrite
+from app.agents.handoff.faithfulness import NO_NARRATIVE
+from app.agents.intake.questions import IntakeQuestions
+from app.agents.loop import MAX_AGENT_STEPS
+from app.memory.writes import EpisodeWrite
+from app.models.outputs import Observation
+from app.triage.policy import FIXED_REPLIES, URGENCY_ADVICE, Decision
 from tests.fakes import HANDOFF, FakeModel, agent_payload, answered, call, draft, episode, member, observation, screen
 from tests.helpers import make_turn, new_id, post
 
@@ -175,7 +175,7 @@ def test_an_unsaved_note_fails_the_turn_so_q_never_claims_a_handoff(store, house
 
 @pytest.mark.integration
 def test_unfinished_intake_is_handed_over_at_the_turn_limit(store, household, api_client, tmp_path):
-    from app.policy import MAX_INTAKE_TURNS
+    from app.triage.policy import MAX_INTAKE_TURNS
 
     household_id, _, asha = household
     turns = MAX_INTAKE_TURNS + 1

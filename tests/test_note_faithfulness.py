@@ -2,7 +2,8 @@
 
 import pytest
 
-from app.agent.handoff import NO_NARRATIVE, IntakeNoteDraft, _narrative, pertinent_negatives, refers_back, reported_in
+from app.agents.handoff.draft import IntakeNoteDraft
+from app.agents.handoff.faithfulness import NO_NARRATIVE, narrative, pertinent_negatives, refers_back, reported_in
 from app.triage.engine import profile, triage
 from app.triage.protocol import load_protocols
 
@@ -24,7 +25,7 @@ def statement(text, *sources):
 def note(*history, timeline=(), reporter=None):
     draft = IntakeNoteDraft.model_validate({"chief_complaint": "Dry cough", "history": list(history),
                                             "symptom_timeline": list(timeline), "relevant_history": None})
-    return _narrative(draft, EVIDENCE, reporter=reporter, session_id="s2")
+    return narrative(draft, EVIDENCE, reporter=reporter, session_id="s2")
 
 
 @pytest.mark.parametrize("quote, expected", [

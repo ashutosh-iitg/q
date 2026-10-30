@@ -3,9 +3,9 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from app.agent.state import Clarification, Episode
-from app.policy import MAX_INTAKE_TURNS, Decision, decide, doctor_urgency, rule
+from app.models.records import Clarification, Episode
 from app.triage.engine import profile, triage
+from app.triage.policy import MAX_INTAKE_TURNS, Decision, decide, doctor_urgency, rule
 from app.triage.protocol import load_protocols
 from tests.fakes import extraction
 from tests.test_graph import make_context, make_member

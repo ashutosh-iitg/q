@@ -5,12 +5,13 @@ apply to every complaint: safety screening, clarification, follow-up rules, then
 sufficiency.
 """
 
-from enum import StrEnum
 from datetime import UTC, datetime
+from enum import StrEnum
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from app.agent.state import Clarification, Extraction, SessionContext
+    from app.models.outputs import Extraction
+    from app.models.records import Clarification, SessionContext
     from app.triage.engine import Triage
 
 

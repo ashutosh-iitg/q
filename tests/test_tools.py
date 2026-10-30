@@ -4,7 +4,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from app.agent.tools import episode_tools, member_tools, to_json
+from app.agents.tools import episode_tools, member_tools, to_json
 from tests.test_graph import make_context, make_episode, make_member
 
 CONTEXT = make_context(make_member("leo", "Leo"), make_member("asha", "Asha"),

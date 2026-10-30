@@ -3,7 +3,7 @@
 import pytest
 from langchain_core.messages import ToolMessage
 
-from app.agent.intake_agent import IntakeQuestions
+from app.agents.intake.questions import IntakeQuestions
 from app.extensions import Extensions
 from tests.fakes import FakeModel, call, draft, episode, member, observation, screen
 from tests.helpers import new_id, post

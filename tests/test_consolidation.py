@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 import psycopg
 import pytest
 
-from app.consolidation import (
+from app.memory.consolidation import (
     SESSION_IDLE_MINUTES,
     ConsolidationResult,
     FactDecision,

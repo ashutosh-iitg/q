@@ -3,14 +3,20 @@
 import pytest
 from langchain_core.messages import ToolMessage
 
-from app.agent.intake_agent import (
-    FALLBACK_LEAD, MAX_ADDED_SIGNS, MAX_MESSAGE_CHARS, IntakeQuestions, NewSign, checked_reply, sign_question,
+from app.agents.intake.questions import (
+    FALLBACK_LEAD,
+    MAX_ADDED_SIGNS,
+    MAX_MESSAGE_CHARS,
+    IntakeQuestions,
+    NewSign,
+    checked_reply,
+    sign_question,
     with_new_sign,
 )
-from app.agent.loop import MAX_AGENT_STEPS, ModelOutputError
-from app.agent.state import Observation
+from app.agents.loop import MAX_AGENT_STEPS, ModelOutputError
+from app.memory.writes import EpisodeWrite
+from app.models.outputs import Observation
 from app.triage.engine import profile, triage
-from app.store import EpisodeWrite
 from app.triage.protocol import load_protocols, with_signs
 from tests.fakes import FakeModel, agent_payload, answered, ask_pending, call, episode, member, observation
 from tests.helpers import fever_episode, make_turn, new_id, post

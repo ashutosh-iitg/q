@@ -8,21 +8,25 @@ It can never verify a fact, change an episode or edit procedure.
 
 import json
 import logging
-from collections.abc import Callable, Iterator, Mapping
-from dataclasses import fields
+from collections.abc import Callable, Iterator
 from datetime import datetime
-from typing import Any, Literal
+from typing import Literal
 
 from langchain_openai import ChatOpenAI
 from langsmith import trace
 from pydantic import BaseModel
 
-from app.agent.state import ConsolidationInput, FactKind
-from app.store import ConsolidationWrite, FactWrite, MissedFactWrite, Store, normalize_subject
+from app.memory.serialize import json_default, plain
+from app.memory.store import Store, normalize_subject
+from app.memory.writes import ConsolidationWrite, FactWrite, MissedFactWrite
+from app.models.records import ConsolidationInput, FactKind
 
 logger = logging.getLogger(__name__)
 
+
 SESSION_IDLE_MINUTES = 30
+
+
 MAX_SUMMARY_CHARS = 1500
 
 
@@ -49,6 +53,7 @@ class ConsolidationResult(BaseModel):
 
 
 Consolidate = Callable[[ConsolidationInput], ConsolidationResult]
+
 
 INSTRUCTIONS = """\
 You consolidate one finished conversation of Q, a family health assistant, into the household's long-term memory.
@@ -131,15 +136,15 @@ def consolidate_session(store: Store, consolidate: Consolidate, session_id: str)
 
 def render_input(source: ConsolidationInput) -> str:
     payload = {
-        "session": _plain(source.session),
+        "session": plain(source.session),
         "session_fact_ids": [f.id for f in source.session_facts],
-        "transcript": [_plain(m) for m in source.transcript],
-        "members": [_plain(m) for m in source.members],
-        "facts": [_plain(f) for f in source.facts],
-        "episodes": [_plain(e) for e in source.episodes],
-        "prior_summaries": [_plain(s) for s in source.prior_summaries],
+        "transcript": [plain(m) for m in source.transcript],
+        "members": [plain(m) for m in source.members],
+        "facts": [plain(f) for f in source.facts],
+        "episodes": [plain(e) for e in source.episodes],
+        "prior_summaries": [plain(s) for s in source.prior_summaries],
     }
-    return json.dumps(payload, default=_json_default)
+    return json.dumps(payload, default=json_default)
 
 
 def plan_from(source: ConsolidationInput, result: ConsolidationResult) -> ConsolidationWrite:
@@ -211,15 +216,3 @@ def _parse_time(value: str | None) -> datetime | None:
         logger.warning("unparseable effective_at %r dropped", value)
         return None
     return parsed if parsed.tzinfo else None
-
-
-def _plain(record: Any) -> dict[str, Any]:
-    return {f.name: getattr(record, f.name) for f in fields(record)}
-
-
-def _json_default(value: Any) -> Any:
-    if isinstance(value, datetime):
-        return value.isoformat()
-    if isinstance(value, Mapping):
-        return dict(value)
-    raise TypeError(f"cannot serialise {type(value).__name__}")

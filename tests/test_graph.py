@@ -1,13 +1,16 @@
 from datetime import UTC, datetime
 from pathlib import Path
-
-import pytest
 from unittest.mock import Mock
 
-from app.agent.graph import PARALLEL_BRANCHES, build_graph, route_after_decide, route_after_load
-from app.agent.nodes import ModelOutputError, fixed_reply, reconcile
-from app.agent.state import Episode, Member, SessionContext
-from app.policy import FIXED_REPLIES, Decision
+import pytest
+
+from app.agents.loop import ModelOutputError
+from app.graph.build import build_graph
+from app.graph.nodes import reconcile
+from app.graph.replies import fixed_reply
+from app.graph.routing import PARALLEL_BRANCHES, route_after_decide, route_after_load
+from app.models.records import Episode, Member, SessionContext
+from app.triage.policy import FIXED_REPLIES, Decision
 from tests.fakes import episode, member, screen
 
 
@@ -113,9 +116,11 @@ def test_unknown_ids_from_the_agents_are_rejected(member_r, episode_r):
 def test_episode_resolution_receives_the_member_and_cannot_lookup_another_members_episode():
     import json
     from dataclasses import replace
+
     from langchain_core.messages import ToolMessage
-    from app.agent.resolvers import resolve_episode
-    from app.agent.state import EpisodeResolution
+
+    from app.agents.resolvers import resolve_episode
+    from app.models.outputs import EpisodeResolution
     from tests.fakes import FakeModel, agent_payload, call
 
     asha_episode = make_episode("asha-fever", "asha")
@@ -143,7 +148,7 @@ def test_episode_resolution_receives_the_member_and_cannot_lookup_another_member
 
 @pytest.mark.parametrize("resolution", [member(), member(status="unresolved")])
 def test_no_episode_agent_call_without_a_resolved_member(resolution):
-    from app.agent.resolvers import resolve_episode
+    from app.agents.resolvers import resolve_episode
     state = {"member_resolution": resolution, "context": make_context(LEO, ASHA)}
     model = Mock()
     assert resolve_episode(state, model=model, store=Mock())["episode_resolution"].status == "none"

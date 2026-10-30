@@ -4,16 +4,16 @@ Run: python -m scripts.debug_chat [household_id] [profile_id]   (loads the repo'
 Debug: python -m pdb -m scripts.debug_chat
 """
 
-from pathlib import Path
 import sys
+from pathlib import Path
 from uuid import uuid4
 
 from dotenv import load_dotenv
 
-from app.agent.graph import build_graph
 from app.config import chat_model, handoff_dir, require_env
 from app.demo import demo_accounts
-from app.store import Store
+from app.graph.build import build_graph
+from app.memory.store import Store
 
 ENV_FILE = Path(__file__).resolve().parents[1] / ".env"
 DEFAULT_HOUSEHOLD = "demo"
