@@ -196,3 +196,17 @@ def test_answer_is_refused_while_the_episodes_intake_is_still_open(store, househ
                if isinstance(m, ToolMessage) and m.status == "error"]
     assert "intake for this episode is still open" in refused[0].content
     assert result["decision"] == Decision.ASK
+
+
+def test_a_doctor_decision_on_a_message_that_drops_the_episode_still_finds_its_note(store, household, tmp_path):
+    from tests.test_escalated_episodes import handed_over
+    from app.triage.policy import ALREADY_WITH_DOCTOR
+    household_id, leo, _ = household
+    session, cough = handed_over(store, household_id, leo)
+    model = ScriptedChat(scripts={  # "let's go back to Leo": observe sees no symptom, so no episode is recorded
+        "supervisor": [task("context"), task("intake"), decide("doctor", "already_escalated"), send()],
+        "context:member": [submit(member(leo))], "context:episode": [submit(episode(cough))],
+        "intake": [submit(observation(intent="other"))],
+    })
+    result = run(store, model, household_id, "Okay, let's go back to Leo", tmp_path, session_id=session)
+    assert result["handoff_path"] is None and result["reply"].startswith(ALREADY_WITH_DOCTOR)

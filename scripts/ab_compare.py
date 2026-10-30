@@ -89,8 +89,8 @@ def run_scenario(client: TestClient, scenario: dict, meter: Meter) -> tuple[list
             seconds = time.perf_counter() - started
             result = response.json() if response.status_code == 200 else {"decision": f"error_{response.status_code}",
                                                                            "reply": response.text}
-            note = (client.get(f"/households/{household}/handoffs/{turn}").json()
-                    if result["decision"] == "doctor" else None)
+            saved = client.get(f"/households/{household}/handoffs/{turn}") if result["decision"] == "doctor" else None
+            note = saved.json() if saved is not None and saved.status_code == 200 else None  # none: a reminder
             turns.append({"scenario": scenario["file"], "session": number, "turn": index, "text": text,
                           "decision": result["decision"], "reply": result["reply"], "seconds": round(seconds, 1),
                           "calls": meter.calls, "tokens": meter.tokens,

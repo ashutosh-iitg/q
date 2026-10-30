@@ -118,10 +118,13 @@ def doctor_urgency(reason: str, triage: "Triage | None") -> str:
     return triage.disposition if reason == "protocol" and triage else DEFAULT_URGENCY
 
 
-def note_on_file(extraction: "Extraction", context: "SessionContext") -> "Episode | None":
+def note_on_file(extraction: "Extraction", context: "SessionContext",
+                 fallback_episode_id: str | None = None) -> "Episode | None":
     """The episode, when its intake note is already with a doctor and this message adds no new doctor
-    sign: a doctor decision then reminds instead of handing the same case over again."""
-    episode = next((e for e in context.episodes if e.id == extraction.episode_id), None)
+    sign: a doctor decision then reminds instead of handing the same case over again. The fallback is
+    the episode the message was resolved to, for a message that drops it ("let's go back to Ayaan")."""
+    episode_id = extraction.episode_id or fallback_episode_id
+    episode = next((e for e in context.episodes if e.id == episode_id), None)
     if episode is None or episode.status != Decision.DOCTOR or extraction.doctor_flags:
         return None
     return episode

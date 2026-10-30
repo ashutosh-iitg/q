@@ -175,7 +175,9 @@ def supervisor_tools(ledger: TurnLedger) -> list[BaseTool]:
     def set_decision(decision: Decision, reason: str, urgency: str | None = None) -> str:
         """Record what Q does this turn. Call it before respond, questions or handoff."""
         state, decision = ledger.state, Decision(decision)
-        handed_over = (note_on_file(state["extraction"], state["context"])
+        resolution = state.get("episode_resolution")
+        resolved_to = resolution.episode_id if resolution and resolution.status == "existing" else None
+        handed_over = (note_on_file(state["extraction"], state["context"], resolved_to)
                        if decision == Decision.DOCTOR and "extraction" in state else None)
         if handed_over:  # one note per hand-over: the reminder keeps the urgency the case went with
             urgency = handed_over.urgency or urgency or DEFAULT_URGENCY
