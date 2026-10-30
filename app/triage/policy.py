@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from app.models.outputs import Extraction
-    from app.models.records import Clarification, SessionContext
+    from app.models.records import Clarification, Episode, SessionContext
     from app.triage.engine import Triage
 
 
@@ -43,6 +43,11 @@ URGENCY_ADVICE = {
     "doctor_24h": "Please arrange to be seen by a clinician within 24 hours.",
     "doctor_routine": "Please book a routine appointment with a clinician in the next few days.",
 }
+# A doctor decision on an episode whose note is already saved: remind, don't hand it over again.
+ALREADY_WITH_DOCTOR = (
+    "This is already with a doctor for review, so I haven't sent it again. If symptoms get worse before "
+    "then, call your local emergency number."
+)
 DEFAULT_URGENCY = "doctor_now"  # when a rule outside the protocol escalates: err towards sooner
 
 MAX_INTAKE_TURNS = 10  # one-question turns before an unfinished intake goes to a doctor; tune by evaluation
@@ -111,3 +116,12 @@ def rule(
 def doctor_urgency(reason: str, triage: "Triage | None") -> str:
     """How soon a doctor decision needs a clinician; the protocol's level when it decided."""
     return triage.disposition if reason == "protocol" and triage else DEFAULT_URGENCY
+
+
+def note_on_file(extraction: "Extraction", context: "SessionContext") -> "Episode | None":
+    """The episode, when its intake note is already with a doctor and this message adds no new doctor
+    sign: a doctor decision then reminds instead of handing the same case over again."""
+    episode = next((e for e in context.episodes if e.id == extraction.episode_id), None)
+    if episode is None or episode.status != Decision.DOCTOR or extraction.doctor_flags:
+        return None
+    return episode

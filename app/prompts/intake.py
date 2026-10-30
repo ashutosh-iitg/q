@@ -45,6 +45,9 @@ intent
   resolution for the existing episode. clarification: the user asks about Q's last question instead
   of answering it (who or what it means, why it is asked: "who is they?", "what do you mean?").
   general_question: health education, no personal symptom. other: small talk or anything else.
+- A reply that only answers Q's clarifying question in recent_messages ("my daughter, Anika" to "who has
+  the sore throat?") carries on the report Q was clarifying: intent symptom_report, with that earlier
+  message's complaint. Answers and facts still quote only the current message.
 
 associated (other symptoms of this same illness)
 - Each symptom the message mentions alongside the complaint, other than the complaint itself, with

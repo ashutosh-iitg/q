@@ -36,6 +36,7 @@ class TurnState(TypedDict, total=False):
     decision_reason: str
     urgency: str | None  # doctor decisions only: doctor_now, doctor_24h or doctor_routine
     handoff_path: str | None
+    note_on_file: bool  # a doctor decision on an episode whose note is already saved: no second note
     reply: str
     is_new_session: bool
     unanswered_last_time: bool  # the intake's next question was asked last turn and not answered

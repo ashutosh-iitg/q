@@ -24,11 +24,11 @@ from app.deep.ledger import TurnLedger
 from app.deep.views import context_report, intake_report
 from app.extensions import Extensions
 from app.graph.nodes import reconcile
-from app.graph.replies import finish_reply
+from app.graph.replies import finish_reply, fixed_reply
 from app.memory.store import Store
 from app.models.outputs import EpisodeResolution, MemberResolution, Observation
 from app.models.records import Member
-from app.triage.policy import Decision
+from app.triage.policy import DEFAULT_URGENCY, Decision, note_on_file
 from app.triage.protocol import Protocol
 
 RESPOND_DECISIONS = frozenset({Decision.ANSWER, Decision.HOME_MONITORING, Decision.ASK_MEMBER, Decision.ASK_EPISODE})
@@ -174,12 +174,21 @@ def supervisor_tools(ledger: TurnLedger) -> list[BaseTool]:
     @tool("set_decision", args_schema=DecisionInput)
     def set_decision(decision: Decision, reason: str, urgency: str | None = None) -> str:
         """Record what Q does this turn. Call it before respond, questions or handoff."""
-        decision = Decision(decision)
-        problem = decision_problem(ledger.state, decision, urgency)
+        state, decision = ledger.state, Decision(decision)
+        handed_over = (note_on_file(state["extraction"], state["context"])
+                       if decision == Decision.DOCTOR and "extraction" in state else None)
+        if handed_over:  # one note per hand-over: the reminder keeps the urgency the case went with
+            urgency = handed_over.urgency or urgency or DEFAULT_URGENCY
+        problem = decision_problem(state, decision, urgency)
         if problem:
             raise ValueError(problem)
-        ledger.apply({"decision": decision, "decision_reason": reason, "draft_reply": None,
-                      "urgency": urgency if decision == Decision.DOCTOR else None})
+        update = {"decision": decision, "decision_reason": reason, "draft_reply": None,
+                  "urgency": urgency if decision == Decision.DOCTOR else None, "note_on_file": bool(handed_over)}
+        if handed_over:
+            ledger.apply({**update, "draft_reply": fixed_reply({**state, **update})["reply"]})
+            return (f"Recorded {decision}. This case's doctor note is already saved, so Q doesn't hand it over "
+                    "again: don't call handoff; submit_turn without a reply sends the reminder.")
+        ledger.apply(update)
         step = NEXT_STEP.get(decision, "call the respond subagent, then submit_turn without a reply")
         return f"Recorded {decision}. Next: {step}."
 
@@ -190,7 +199,7 @@ def supervisor_tools(ledger: TurnLedger) -> list[BaseTool]:
         decision = state.get("decision")
         if decision is None:
             raise ValueError("Call set_decision first")
-        if decision == Decision.DOCTOR and not state.get("handoff_path"):
+        if decision == Decision.DOCTOR and not (state.get("handoff_path") or state.get("note_on_file")):
             raise ValueError("Call the handoff subagent first: Q never says a case is handed over before "
                              "the doctor's note is saved")
         written = (reply or "").strip()
@@ -206,7 +215,10 @@ def supervisor_tools(ledger: TurnLedger) -> list[BaseTool]:
 
 def decision_problem(state: dict[str, Any], decision: Decision, urgency: str | None) -> str | None:
     """What makes a decision impossible to carry out; it says nothing about whether it is wise."""
-    found = state.get("triage")
+    found, extraction = state.get("triage"), state.get("extraction")
+    intake_open = bool(state.get("episode_id") and found and found.pending and extraction
+                       and extraction.intent in ("symptom_report", "update") and not extraction.resolved)
+    next_finding = found.pending[0].finding if intake_open else None
     checks: list[tuple[bool, str]] = [
         (decision != Decision.EMERGENCY and "extraction" not in state,
          "Call the context subagent, then the intake subagent, before deciding"),
@@ -214,5 +226,8 @@ def decision_problem(state: dict[str, Any], decision: Decision, urgency: str | N
         (decision == Decision.ASK and not (found and found.pending),
          "There is no intake question left to ask for this episode"),
         (decision == Decision.HOME_MONITORING and found is None, "Home monitoring needs a triaged episode"),
+        (decision == Decision.ANSWER and intake_open,
+         f"The intake for this episode is still open (next to check: {next_finding}): decide ask to "
+         "continue it, or doctor or emergency"),
     ]
     return next((message for failed, message in checks if failed), None)

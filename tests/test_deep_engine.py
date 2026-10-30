@@ -164,3 +164,35 @@ def test_every_agent_call_is_offered_only_its_roles_tools(store, household, tmp_
     assert offered["intake"] == {"get_protocol", "Observation"}
     assert "IntakeQuestions" in offered["questions"] and "write_file" not in set().union(*offered.values())
     assert all(c.settings.get("parallel_tool_calls") is False for c in model.by_role("supervisor"))
+
+
+def test_a_doctor_decision_on_a_handed_over_episode_reminds_without_a_second_note(store, household, tmp_path):
+    from tests.test_escalated_episodes import handed_over
+    from app.triage.policy import ALREADY_WITH_DOCTOR, URGENCY_ADVICE
+    household_id, leo, _ = household
+    session, cough = handed_over(store, household_id, leo)
+    model = ScriptedChat(scripts={
+        "supervisor": [task("context"), task("intake"), decide("doctor", "already_escalated"), task("handoff"),
+                       send()],
+        "context:member": [submit(member(leo))], "context:episode": [submit(episode(cough))],
+        "intake": [submit(observation(intent="update", complaint="cough"))],
+    })
+    result = run(store, model, household_id, "Leo is still coughing", tmp_path, session_id=session)
+    assert result["decision"] == Decision.DOCTOR and result["handoff_path"] is None
+    assert result["reply"] == f"{ALREADY_WITH_DOCTOR} {URGENCY_ADVICE['doctor_24h']}"
+    assert model.by_role("handoff") == []  # told it's already handed over, without a model call
+
+
+def test_answer_is_refused_while_the_episodes_intake_is_still_open(store, household, tmp_path):
+    household_id, leo, _ = household
+    model = ScriptedChat(scripts={
+        "supervisor": [task("context"), task("intake"), decide("answer", "no_active_symptom"), decide("ask"),
+                       task("questions"), send()],
+        "context:member": [submit(member(leo))], "context:episode": [submit(episode(status="new"))],
+        "intake": [submit(observation(intent="symptom_report", complaint="fever"))], "questions": [ask_next],
+    })
+    result = run(store, model, household_id, "Leo has a fever", tmp_path)
+    refused = [m for m in model.by_role("supervisor")[3].messages
+               if isinstance(m, ToolMessage) and m.status == "error"]
+    assert "intake for this episode is still open" in refused[0].content
+    assert result["decision"] == Decision.ASK

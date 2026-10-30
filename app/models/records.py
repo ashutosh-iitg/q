@@ -57,6 +57,8 @@ class Episode:
     protocol_id: str | None = None
     findings: Mapping[str, Any] = MappingProxyType({})  # question ID -> {value, quote, at}
     associated: Mapping[str, Any] = MappingProxyType({})  # symptom -> {status: active|resolved, quote, at}
+    urgency: str | None = None  # how soon a doctor was asked to see it, once handed over
+    handoff_id: str | None = None  # the turn whose intake note handed it over
 
 
 @dataclass(frozen=True)

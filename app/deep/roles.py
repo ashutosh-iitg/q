@@ -96,7 +96,7 @@ class ReportBack(AgentMiddleware):
         if isinstance(last, ToolMessage):
             return {"messages": [AIMessage(content=last.text)]}
         if isinstance(last, HumanMessage):  # called again after its result was recorded
-            return {"messages": [AIMessage(content="Already recorded this turn; see this_turn.")]}
+            return {"messages": [AIMessage(content="Nothing to do: it's already recorded; see this_turn.")]}
         return None
 
 

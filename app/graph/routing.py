@@ -14,7 +14,7 @@ def route_after_decide(state: TurnState) -> str:
     """Doctor decisions hand the case over before replying; emergencies reply at once; the intake
     agent asks the protocol's next questions."""
     if state["decision"] == Decision.DOCTOR:
-        return "handoff"
+        return "fixed_reply" if state.get("note_on_file") else "handoff"
     if state["decision"] == Decision.ASK and state.get("triage"):
         return "intake_agent"
     return "fixed_reply" if state["decision"] in FIXED_REPLIES else "respond"

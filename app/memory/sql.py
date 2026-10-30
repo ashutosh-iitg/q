@@ -47,16 +47,19 @@ RETURNING id
 
 UPSERT_EPISODE_SQL = """
 INSERT INTO episodes (id, member_id, complaint, status, slots, questions_asked,
-                      check_back_after, related_episode_id, protocol_id, findings, associated)
+                      check_back_after, related_episode_id, protocol_id, findings, associated, urgency,
+                      handoff_id)
 VALUES (%(id)s, %(member_id)s, %(complaint)s, %(status)s, %(slots)s, %(questions_asked_delta)s,
         %(check_back_after)s, %(related_episode_id)s, %(protocol_id)s, coalesce(%(findings)s::jsonb, '{}'),
-        coalesce(%(associated)s::jsonb, '{}'))
+        coalesce(%(associated)s::jsonb, '{}'), %(urgency)s, %(handoff_id)s)
 ON CONFLICT (id) DO UPDATE SET
   status = EXCLUDED.status,
   slots = episodes.slots || EXCLUDED.slots,
   protocol_id = coalesce(EXCLUDED.protocol_id, episodes.protocol_id),
   findings = coalesce(%(findings)s::jsonb, episodes.findings),
   associated = coalesce(%(associated)s::jsonb, episodes.associated),
+  urgency = coalesce(EXCLUDED.urgency, episodes.urgency),
+  handoff_id = coalesce(EXCLUDED.handoff_id, episodes.handoff_id),
   questions_asked = episodes.questions_asked + EXCLUDED.questions_asked,
   check_back_after = EXCLUDED.check_back_after,
   updated_at = now()

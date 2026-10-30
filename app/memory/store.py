@@ -232,6 +232,8 @@ def _upsert_episode(conn: Connection, episode: EpisodeWrite) -> None:
         "protocol_id": episode.protocol_id,
         "findings": None if episode.findings is None else Jsonb(dict(episode.findings)),
         "associated": None if episode.associated is None else Jsonb(dict(episode.associated)),
+        "urgency": episode.urgency,
+        "handoff_id": episode.handoff_id,
     }
     if conn.execute(UPSERT_EPISODE_SQL, params).fetchone() is None:
         raise EpisodeOwnershipError(f"episode {episode.id} does not belong to member {episode.member_id}")

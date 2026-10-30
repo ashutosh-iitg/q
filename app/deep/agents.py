@@ -89,7 +89,7 @@ def build_turn_agent(model: BaseChatModel, ledger: TurnLedger, deps: Deps) -> Co
                   "you decide.", [reply_tool(ledger)], views.respond, drafted, ROLE_CALLS),
         _subagent("handoff", "Writes and saves the doctor's intake note, after you decide on a doctor.",
                   [*handoff_lookups, escalation_tool(ledger, deps)], lambda: views.handoff(handoff_lookups),
-                  lambda: bool(ledger.get("handoff_path")), ROLE_CALLS),
+                  lambda: bool(ledger.get("handoff_path") or ledger.get("note_on_file")), ROLE_CALLS),
     ]
     supervisor = RoleView("supervisor", lambda: Phase(
         "supervisor", SUPERVISOR_PROMPT, supervisor_view(ledger.state),

@@ -49,6 +49,7 @@ def progress(state: TurnState) -> dict[str, Any]:
         "triage": triage_summary(state),
         "decision": state.get("decision"), "urgency": state.get("urgency"),
         "draft_reply": state.get("draft_reply"), "doctor_note_saved": bool(state.get("handoff_path")),
+        "doctor_note_already_on_file": bool(state.get("note_on_file")),
     }
 
 

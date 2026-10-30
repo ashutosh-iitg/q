@@ -14,7 +14,7 @@ from app.models.outputs import EpisodeResolution, MemberResolution, Screen
 from app.models.records import Clarification, Member
 from app.models.turn import TurnState
 from app.prompts.screen import SCREEN_PROMPT
-from app.triage.policy import Decision, doctor_urgency, rule
+from app.triage.policy import DEFAULT_URGENCY, Decision, doctor_urgency, note_on_file, rule
 
 DEFAULT_CHECK_BACK_HOURS = 24
 
@@ -85,8 +85,11 @@ def _clarification(
 def decide(state: TurnState) -> TurnState:
     triage = state.get("triage")
     decision, reason = rule(state["extraction"], state["context"], state.get("clarification"), triage)
-    urgency = doctor_urgency(reason, triage) if decision == Decision.DOCTOR else None
-    return {"decision": decision, "decision_reason": reason, "urgency": urgency}
+    if decision != Decision.DOCTOR:
+        return {"decision": decision, "decision_reason": reason, "urgency": None, "note_on_file": False}
+    handed_over = note_on_file(state["extraction"], state["context"])
+    urgency = (handed_over.urgency or DEFAULT_URGENCY) if handed_over else doctor_urgency(reason, triage)
+    return {"decision": decision, "decision_reason": reason, "urgency": urgency, "note_on_file": bool(handed_over)}
 
 
 def save_turn(state: TurnState, *, store: Store) -> TurnState:
@@ -110,6 +113,8 @@ def save_turn(state: TurnState, *, store: Store) -> TurnState:
             check_back_after=check_back, related_episode_id=state["related_episode_id"],
             protocol_id=state.get("protocol_id"), findings=state.get("findings"),
             associated=state.get("associated"),
+            urgency=state.get("urgency") if decision == Decision.DOCTOR else None,
+            handoff_id=state["turn_id"] if state.get("handoff_path") else None,
         )
     facts = tuple(
         FactWrite(member_id=extraction.member_id, episode_id=state["episode_id"], kind=f.kind,

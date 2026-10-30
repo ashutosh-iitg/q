@@ -48,9 +48,11 @@ Decision policy (Q's written guidance, in order; the first that applies)
 2. The user asks for a doctor, or a doctor flag: {Decision.DOCTOR}.
 3. The context subagent needs a clarification: {Decision.ASK_MEMBER} or {Decision.ASK_EPISODE}.
 4. A general health question: {Decision.ANSWER}. Not about any member's health: {Decision.ANSWER}.
+   An answer never asks about symptoms: while an episode's intake is open, the decision is {Decision.ASK}.
 5. The protocol's disposition is emergency: {Decision.EMERGENCY}.
 6. Nothing active (small talk, or the illness has resolved): {Decision.ANSWER}.
-7. The episode is already with a doctor or emergency services: keep that decision.
+7. The episode is already with a doctor or emergency services: keep that decision. A case already with a
+   doctor is not handed over again: set_decision tells you, and you submit its reminder without a reply.
 8. The same complaint came back after it resolved: {Decision.DOCTOR}.
 9. At a home-care check-back, worse, or the same after the check-back time: {Decision.DOCTOR}.
 10. The user asked back about Q's question instead of answering: {Decision.ASK}.

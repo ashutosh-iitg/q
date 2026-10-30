@@ -34,6 +34,8 @@ class EpisodeWrite:
     protocol_id: str | None = None
     findings: Mapping[str, Any] | None = None  # replaces the stored findings when given
     associated: Mapping[str, Any] | None = None  # replaces the stored associated symptoms when given
+    urgency: str | None = None  # doctor decisions: kept until a later doctor decision changes it
+    handoff_id: str | None = None  # the turn whose intake note handed the episode over; kept when None
 
 
 @dataclass(frozen=True)

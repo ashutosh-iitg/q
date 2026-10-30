@@ -77,7 +77,7 @@ def complete(state: TurnState, deps: Deps) -> TurnState:
     if not state.get("reply"):
         update |= _fallback_reply({**state, **update})
     state = {**state, **update}
-    if state["decision"] == Decision.DOCTOR and not state.get("handoff_path"):
+    if state["decision"] == Decision.DOCTOR and not (state.get("handoff_path") or state.get("note_on_file")):
         state = {**state, "urgency": state.get("urgency") or DEFAULT_URGENCY}
         note = handoff_inputs(state, deps.store, deps.handoff_dir, deps.extensions.lab_results,
                               deps.extensions.deliver_handoff)

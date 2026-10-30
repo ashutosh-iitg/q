@@ -61,6 +61,8 @@ def _episode(e: Mapping[str, Any]) -> Episode:
         protocol_id=e.get("protocol_id"),
         findings=MappingProxyType(e.get("findings") or {}),
         associated=MappingProxyType(e.get("associated") or {}),
+        urgency=e.get("urgency"),
+        handoff_id=e.get("handoff_id"),
     )
 
 
