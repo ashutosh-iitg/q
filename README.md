@@ -74,6 +74,7 @@ in the response. A model failure returns 502; retry with the same key.
 ```text
 app/
   graph/        the turn graph: build.py (wiring), nodes.py, replies.py, routing.py
+  deep/         the deepagents engine: engine.py, agents.py, roles.py (views), tools.py, views.py, ledger.py
   agents/       the model-driven steps and what they share
     loop.py       bounded lookup-then-answer loop every agent runs
     tools.py      read-only, household-scoped lookups
@@ -89,9 +90,50 @@ app/
 api/            FastAPI app and request/response schemas
 ui/             Streamlit client helpers and transcript export
 streamlit_app.py  the chat UI
-scripts/        smoke test, terminal debug chat, scenario runner
+scripts/        smoke test, terminal debug chat, scenario runner, engine A/B
 tests/          pytest suite (fake model; Postgres tests skip without DATABASE_URL)
 ```
+
+## Two turn engines
+
+`Q_ENGINE` picks how a turn runs. Both share the same memory, tools, checks and saved data, and both
+provide `.invoke(input, config) -> TurnOutput`, so the API and UI don't change.
+
+- `graph` (default): the LangGraph pipeline in `app/graph/`. Code fixes the order of steps and the
+  policy in `app/triage/policy.py` decides the outcome.
+- `deep`: a deepagents supervisor in `app/deep/` with five subagents (`context`, `intake`, `questions`,
+  `respond`, `handoff`). The supervisor orders the work and decides the outcome, with the written
+  policy as guidance: the intake report includes the policy's suggestion for the case.
+
+Code still runs both ends of a deep turn: it loads memory, replays saved turns and screens the
+message before any agent runs, then fills a safe reply or a minimal doctor note if the agents didn't,
+and saves the turn in one transaction. Each subagent ends on a tool named like the graph's answer
+schema, which runs the graph's checks (`reconcile`, `apply_observation`, `checked_reply`,
+`escalate_to_doctor`); an error goes back to the model to fix.
+
+What each agent sees is set by code on every model call (`RoleView` in `app/deep/roles.py`), from
+the turn's ledger:
+
+| Agent | Sees | Tools |
+|---|---|---|
+| supervisor | household, tracked episodes, this conversation tagged by member and episode, earlier conversations' summaries, the screen, what this run has recorded | `task`, `set_decision`, `submit_turn` |
+| context | the member resolver's payload, then the episode resolver's, scoped to the chosen member | member lookups, then that member's episode lookups |
+| intake | the member, the episode's findings and protocol, its history across sessions, Q's last question | `get_protocol`, `Observation` |
+| questions | what is known and still to check, who is writing, the next finding | lookups, `IntakeQuestions` |
+| respond | the decision, the observation, knowledge passages | `Reply` |
+| handoff | the code-built note record and the evidence it may quote | lookups, `escalate_to_doctor` |
+
+No agent keeps a thread between turns: each turn starts from Postgres, so context never grows with
+the conversation and never carries an earlier run's tool output. Subagents get their role's data from
+code, not the supervisor's paraphrase of the message.
+
+Compare the engines on every scenario with the real model (paid API calls):
+
+```sh
+uv run --env-file .env python -m scripts.ab_compare            # both engines
+```
+
+It writes per-engine transcripts to `transcripts/ab/` and the comparison to `output/ab/deep-vs-graph.md`.
 
 ## Current implementation
 
