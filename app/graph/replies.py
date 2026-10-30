@@ -19,21 +19,27 @@ def fixed_reply(state: TurnState) -> TurnState:
 
 def respond(state: TurnState, *, model: Runnable, knowledge: Knowledge | None = None) -> TurnState:
     # A plugged-in knowledge base grounds general answers (see app/extensions.py).
+    response = model.invoke([("system", RESPOND_PROMPT), ("human", reply_payload(state, knowledge))],
+                            config={"run_name": "reply"}, prompt_cache_key="q:reply")
+    return {"reply": finish_reply(state, response.text)}
+
+
+def reply_payload(state: TurnState, knowledge: Knowledge | None = None) -> str:
+    """What the reply writer sees: the decision, what was observed, and any reference passages."""
     reference = knowledge(state["text"]) if knowledge and state["decision"] == Decision.ANSWER else None
-    response = model.invoke([
-        ("system", RESPOND_PROMPT),
-        ("human", render_context(state, decision=state["decision"],
-                                 extraction=state["extraction"].model_dump(),
-                                 clarification=state.get("clarification"),
-                                 associated_symptoms=state.get("associated"),
-                                 other_open_intakes=other_open_intakes(state), reference=reference)),
-    ], config={"run_name": "reply"}, prompt_cache_key="q:reply")
-    reply = response.text.strip()
+    return render_context(state, decision=state["decision"], extraction=state["extraction"].model_dump(),
+                          clarification=state.get("clarification"), associated_symptoms=state.get("associated"),
+                          other_open_intakes=other_open_intakes(state), reference=reference)
+
+
+def finish_reply(state: TurnState, text: str) -> str:
+    """The written reply, plus the protocol's fixed home-care text when Q is monitoring at home."""
+    reply = text.strip()
     if not reply:
         raise ModelOutputError("Empty model response")
     if state["decision"] == Decision.HOME_MONITORING:
         reply += "\n\n" + home_care_advice(state)
-    return {"reply": reply}
+    return reply
 
 
 def home_care_advice(state: TurnState) -> str:
