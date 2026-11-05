@@ -1,7 +1,8 @@
 """Run the four assignment scenarios against the real model and save their transcripts.
 
-Run: uv run --env-file .env python -m scripts.run_scenarios
-Each scenario gets a fresh copy of a synthetic demo family, so scenarios never share memory. Each
+Run: uv run --env-file .env python -m scripts.run_scenarios [extra] [--judge]
+--judge adds the eval-only entailment judge (app/evals/entailment.py) to every doctor note: one extra
+model call per note, reported in the transcript, never written into the note. Each scenario gets a fresh copy of a synthetic demo family, so scenarios never share memory. Each
 inner list is one session; a session is closed (and consolidated into memory) before the next.
 """
 
@@ -13,7 +14,9 @@ from uuid import uuid4
 from fastapi.testclient import TestClient
 
 from api.main import create_app
+from app.config import judge_model
 from app.demo import demo_accounts
+from app.evals.entailment import Judge, entailment_judge, judge_note
 
 OUT = Path(os.environ.get("Q_TRANSCRIPTS_DIR") or Path(__file__).resolve().parents[1] / "transcripts")
 
@@ -61,7 +64,7 @@ EXTRA_SCENARIOS = [
 ]
 
 
-def run(client: TestClient, scenario: dict) -> str:
+def run(client: TestClient, scenario: dict, judge: Judge | None = None) -> str:
     store = client.app.state.store
     family = next(a for a in demo_accounts() if a["household_id"] == scenario["family"])
     household = f"scenario-{uuid4().hex[:8]}"
@@ -96,7 +99,7 @@ def run(client: TestClient, scenario: dict) -> str:
                                  for e in context.episodes) or "none"
             lines += [f"_Episodes: {episodes}_", ""]
             if result["decision"] == "doctor":
-                lines += note_lines(client.get(f"/households/{household}/handoffs/{turn}").json())
+                lines += note_lines(client.get(f"/households/{household}/handoffs/{turn}").json(), judge)
         if later:
             move_back_a_day(store, household)  # before consolidation, so the summary is dated that day
         client.post(f"/households/{household}/sessions/{session}/close")  # consolidates into memory
@@ -124,7 +127,7 @@ def move_back_a_day(store, household: str, closed_only: bool = False) -> None:
             conn.execute(statement, {"h": household})
 
 
-def note_lines(note: dict) -> list[str]:
+def note_lines(note: dict, judge: Judge | None = None) -> list[str]:
     escalation = note["escalation"]
     timeline = [f"  - {t['finding']} ({t['onset'] or 'onset not stated'}): \"{t['quote']}\" [{t['reported_in']['label']}]"
                 for t in note["symptom_timeline"]]
@@ -136,14 +139,26 @@ def note_lines(note: dict) -> list[str]:
             f"- History: {note['history_of_present_illness']}", "- Timeline:", *timeline,
             "- Denied when asked:", *(negatives or ["  - none"]),
             f"- Relevant history: {note['relevant_history'] or 'none recorded'}",
-            f"- Left out as unsupported: {len(note['faithfulness']['dropped'])}", "", "</details>", ""]
+            f"- Left out as unsupported: {len(note['faithfulness']['dropped'])}",
+            *(judge_lines(judge_note(judge, note)) if judge else []), "", "</details>", ""]
+
+
+def judge_lines(result: dict) -> list[str]:
+    if "error" in result:
+        return [f"- Entailment judge: failed ({result['error']})"]
+    flagged = [f"  - {f['verdict']}: \"{f['text']}\" citing "
+               + ", ".join(f"\"{e['quote']}\"" for e in f["evidence"]) + f" ({f['reason']})"
+               for f in result["flagged"]]
+    return [f"- Entailment judge: {result['supported']}/{result['claims']} supported", *flagged]
 
 
 def main() -> None:
+    args = sys.argv[1:]
+    judge = entailment_judge(judge_model()) if "--judge" in args else None
     OUT.mkdir(exist_ok=True)
     with TestClient(create_app()) as client:
-        for scenario in EXTRA_SCENARIOS if sys.argv[1:] == ["extra"] else SCENARIOS:
-            (OUT / scenario["file"]).write_text(run(client, scenario))
+        for scenario in EXTRA_SCENARIOS if "extra" in args else SCENARIOS:
+            (OUT / scenario["file"]).write_text(run(client, scenario, judge))
             print("saved", OUT / scenario["file"])
 
 

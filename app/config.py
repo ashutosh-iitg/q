@@ -19,6 +19,12 @@ def chat_model() -> ChatOpenAI:
                       reasoning_effort=os.environ.get("Q_REASONING_EFFORT", "").strip() or None)
 
 
+def judge_model() -> ChatOpenAI:
+    """The eval-only entailment judge: Q_JUDGE_MODEL, else the model Q itself uses."""
+    name = os.environ.get("Q_JUDGE_MODEL", "").strip() or require_env("Q_MODEL_MINI")
+    return ChatOpenAI(model=name, use_responses_api=True, timeout=60, max_retries=1)
+
+
 def handoff_dir() -> Path:
     """Where doctor-handoff intake notes are saved, one JSON file per escalation."""
     return Path(os.environ.get("Q_HANDOFF_DIR", "").strip() or DEFAULT_HANDOFF_DIR)
