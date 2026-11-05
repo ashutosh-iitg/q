@@ -100,3 +100,12 @@ def episode_tools(context: SessionContext, store: Store, household_id: str) -> l
         return to_json(context.prior_summaries)
 
     return [list_episodes, episode_history, past_session_summaries, _recent_messages(context)]
+
+
+def clinical_tools(
+    context: SessionContext, store: Store, household_id: str, *, names: set[str],
+    lab_results: LabResults | None = None,
+) -> list[BaseTool]:
+    """Shared lookup selection for intake and handoff, with optional lab results."""
+    lookups = [*member_tools(context), *episode_tools(context, store, household_id)]
+    return [t for t in lookups if t.name in names] + lab_tools(context, household_id, lab_results)

@@ -75,12 +75,14 @@ def observe_payload(state: TurnState, store: Store, protocols: Mapping[str, Prot
     member = next((m for m in context.members if m.id == member_id), None)
     known = with_signs(_protocol_of(episode, protocols), episode.findings) if episode else None
     last = last_question(state, protocols)
+    history = store.episode_history(state["household_id"], episode.id) if episode else ()
+    recent_ids = {m.id for m in context.recent_messages}
     return to_json({  # from most to least stable, so a prompt cache can reuse more of the prefix
         "protocol_catalog": [{"id": p.id, "complaints": list(p.complaints)} for p in protocols.values()],
         "profile_id": state.get("profile_id"),
         "member": member, "member_facts": [f for f in context.facts if f.member_id == member_id],
         "episode": episode, "protocol": known and _view(known),
-        "episode_history": store.episode_history(state["household_id"], episode.id) if episode else (),
+        "episode_history": [m for m in history if m.id not in recent_ids],
         "recent_messages": context.recent_messages,
         "last_question": last and {"id": last.id, "finding": last.finding},
         "text": state["text"], "now": datetime.now(UTC),

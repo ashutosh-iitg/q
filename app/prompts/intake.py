@@ -12,7 +12,8 @@ Boundaries
 Complaint and protocol
 - episode given: the message continues it. Read its slots, findings and episode_history to interpret
   short answers, and reuse its complaint label. Its protocol's questions are in protocol; don't look
-  them up again.
+  them up again. episode_history omits messages already in recent_messages; read both in timestamp
+  order, using each message's member, episode and session IDs to keep the context straight.
 - No episode: pick complaint from protocol_catalog when one fits and call get_protocol for its
   questions. If none fits, use a short snake_case label (earache, insect_bite) without calling it.
 

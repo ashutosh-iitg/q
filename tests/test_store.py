@@ -104,18 +104,6 @@ def test_turn_keys_are_scoped_to_session_and_replay_checks_text(store, household
     assert store.saved_turn("another-household", sessions[0], "first", "hello") is None
 
 
-def test_correction_supersedes_the_earlier_fact(store, household):
-    household_id, leo, _ = household
-    session_id = new_id("s")
-    store.load_context(household_id, session_id)
-    store.save_turn(make_turn(household_id, session_id, facts=[fact(leo, "temperature 39.9 C")]))
-    [wrong] = store.load_context(household_id, session_id).facts
-
-    store.save_turn(make_turn(household_id, session_id, facts=[fact(leo, "temperature 38.9 C", supersedes_id=wrong.id)]))
-
-    assert [f.text for f in store.load_context(household_id, session_id).facts] == ["temperature 38.9 C"]
-
-
 def test_episode_of_another_member_is_rejected_and_the_turn_rolled_back(store, household):
     household_id, leo, asha = household
     session_id, episode_id = new_id("s"), new_id("e")

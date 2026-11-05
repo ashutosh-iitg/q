@@ -1,7 +1,6 @@
 """Postgres persistence: one read round trip and one write transaction per turn."""
 
 import json
-import logging
 import re
 from collections.abc import Iterable, Mapping
 from pathlib import Path
@@ -24,7 +23,6 @@ from app.memory.sql import (
     MARK_DUPLICATE_SQL,
     PROMOTE_FACT_SQL,
     REPLACE_FACT_SQL,
-    SUPERSEDE_FACT_SQL,
     UPDATE_SESSION_SQL,
     UPSERT_EPISODE_SQL,
     UPSERT_MEMBER_SQL,
@@ -40,9 +38,6 @@ from app.memory.writes import (
 )
 from app.models.records import ConsolidationInput, FactStatus, Message, SessionContext
 from app.triage.policy import Decision
-
-logger = logging.getLogger(__name__)
-
 
 SCHEMA_PATH = Path(__file__).with_name("schema.sql")
 
@@ -258,11 +253,4 @@ def _insert_fact(
         "effective_at": fact.effective_at,
         "source_message_id": source_message_id,
     }
-    new_id = conn.execute(INSERT_FACT_SQL, params).fetchone()["id"]
-    if fact.supersedes_id is None:
-        return
-    superseded = conn.execute(
-        SUPERSEDE_FACT_SQL, {"new_id": new_id, "old_id": fact.supersedes_id, "member_id": fact.member_id}
-    ).rowcount
-    if superseded != 1:
-        logger.warning("fact %s not superseded: missing, another member's, or already superseded", fact.supersedes_id)
+    conn.execute(INSERT_FACT_SQL, params)

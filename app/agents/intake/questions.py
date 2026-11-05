@@ -14,7 +14,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from app.agents.context import other_open_intakes
 from app.agents.loop import ModelOutputError, run_agent
-from app.agents.tools import episode_tools, lab_tools, member_tools, to_json
+from app.agents.tools import clinical_tools, to_json
 from app.extensions import LabResults
 from app.memory.store import Store
 from app.models.turn import TurnState
@@ -56,8 +56,7 @@ def intake_agent(
     state: TurnState, *, model: BaseChatModel, store: Store, lab_results: LabResults | None = None,
 ) -> TurnState:
     context = state["context"]
-    lookups = [t for t in [*member_tools(context), *episode_tools(context, store, state["household_id"])]
-               if t.name in LOOKUPS] + lab_tools(context, state["household_id"], lab_results)
+    lookups = clinical_tools(context, store, state["household_id"], names=LOOKUPS, lab_results=lab_results)
     try:
         result = run_agent(model, system=INTAKE_AGENT_PROMPT, payload=question_payload(state), tools=lookups,
                            answer=IntakeQuestions)

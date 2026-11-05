@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 
 from langchain_core.language_models import BaseChatModel
 
-from app.agents.loop import MAX_AGENT_STEPS, ModelOutputError, run_agent  # noqa: F401  (re-exported)
+from app.agents.loop import ModelOutputError, run_agent
 from app.agents.tools import episode_tools, member_tools, to_json
 from app.memory.store import Store
 from app.models.outputs import EpisodeResolution, MemberResolution

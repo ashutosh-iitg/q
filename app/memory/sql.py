@@ -148,12 +148,6 @@ WHERE new.id = %(fact_id)s AND new.session_id = %(session_id)s
 """
 
 
-SUPERSEDE_FACT_SQL = """
-UPDATE member_facts SET superseded_by = %(new_id)s
-WHERE id = %(old_id)s AND member_id = %(member_id)s AND superseded_by IS NULL
-"""
-
-
 UPDATE_SESSION_SQL = """
 UPDATE sessions SET member_hint_id = coalesce(%(member_id)s, member_hint_id),
   pending_episode_id = %(pending_episode_id)s, last_active_at = now()

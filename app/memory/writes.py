@@ -46,7 +46,6 @@ class FactWrite:
     subject: str  # normalised on write
     text: str
     effective_at: datetime | None = None
-    supersedes_id: int | None = None
 
 
 @dataclass(frozen=True)

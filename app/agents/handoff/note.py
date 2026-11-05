@@ -29,7 +29,7 @@ from pydantic import ValidationError
 from app.agents.handoff.draft import CURRENT, IntakeNoteDraft
 from app.agents.handoff.faithfulness import narrative, pertinent_negatives, reported_in
 from app.agents.loop import ModelOutputError, run_agent
-from app.agents.tools import episode_tools, lab_tools, member_tools, to_json
+from app.agents.tools import clinical_tools, to_json
 from app.extensions import DeliverHandoff, LabResults
 from app.memory.store import Store
 from app.models.turn import TurnState
@@ -76,8 +76,7 @@ def handoff_inputs(state: TurnState, store: Store, directory: Path, lab_results:
     record = _record(state, evidence)
     path = _note_path(directory, state)
     context = state["context"]
-    lookups = [t for t in [*member_tools(context), *episode_tools(context, store, state["household_id"])]
-               if t.name in LOOKUPS] + lab_tools(context, state["household_id"], lab_results)
+    lookups = clinical_tools(context, store, state["household_id"], names=LOOKUPS, lab_results=lab_results)
     payload = to_json({key: record[key] for key in ("patient", "reported_by", "escalation", "triage",
                                                     "pertinent_negatives", "associated_symptoms", "reported_values")}
                       | {"evidence": evidence})

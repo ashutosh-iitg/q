@@ -7,6 +7,14 @@ apply code policy → return fixed escalation text or generate a reply → save 
 
 ## Run locally
 
+For a one-command demo, start Docker, configure `.env` as below, then run `./demo.sh`.
+The script installs locked dependencies, starts local PostgreSQL, waits for the API to seed
+the 10 demo accounts, and starts Streamlit at http://127.0.0.1:8501. It requires free ports
+5432 (PostgreSQL), 8000 (API), and 8501 (Streamlit); an existing Compose database is reused.
+Ctrl+C stops the API and UI. Database data is retained; use `docker compose stop postgres`
+to stop PostgreSQL. If `.env` is missing, the script creates it and asks you to fill in the
+model settings before rerunning.
+
 Requires Python 3.13+, uv, Docker, and an OpenAI API key with access to a model that
 supports structured output.
 
@@ -101,7 +109,6 @@ tests/          pytest suite (fake model; Postgres tests skip without DATABASE_U
   (`ask_member` or `ask_episode`) using the agent's instructions.
   `Q_MODEL_MINI` serves every model step and consolidation; optional `Q_REASONING_EFFORT`
   (e.g. `low`, `high`) sets its reasoning effort.
-  Standard/reasoning model settings are reserved for later routing.
 - Symptom intake follows triage protocols (`app/triage/protocols/*.yaml`, synthetic placeholders
   in the format of licensed guidelines). A disposition is declared once it is *sufficient*: a
   positive answer at its level and every more urgent question ruled out. Until then code picks the
